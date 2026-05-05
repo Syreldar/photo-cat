@@ -3,6 +3,8 @@ set -u
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR" || exit 1
+export PHOTO_CAT_PROJECT_DIR="$PROJECT_DIR"
+export PHOTO_CAT_CONFIG="$PROJECT_DIR/config.yaml"
 
 MODE="ALL"
 case "${1:-}" in
@@ -19,18 +21,149 @@ esac
 
 PYTHON_CMD=""
 OS_NAME="$(uname -s 2>/dev/null || echo Unknown)"
+LOG_DIR="$PROJECT_DIR/logs"
+SETUP_LOG="$LOG_DIR/setup_unix.log"
+
+USE_COLOR=0
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    USE_COLOR=1
+fi
+
+RESET=""
+BOLD=""
+DIM=""
+CYAN=""
+GREEN=""
+YELLOW=""
+RED=""
+MAGENTA=""
+GRAY=""
+
+if [ "$USE_COLOR" -eq 1 ]; then
+    RESET="\033[0m"
+    BOLD="\033[1m"
+    DIM="\033[2m"
+    CYAN="\033[36m"
+    GREEN="\033[32m"
+    YELLOW="\033[33m"
+    RED="\033[31m"
+    MAGENTA="\033[35m"
+    GRAY="\033[90m"
+fi
+
+say_color() {
+    color_code="$1"
+    shift
+    printf "%b%s%b\n" "$color_code" "$*" "$RESET"
+}
+
+step() {
+    say_color "$CYAN" "$1"
+}
+
+
+progress_bar() {
+    percent="$1"
+    detail="${2:-}"
+    complete="${3:-0}"
+
+    if [ "$percent" -lt 0 ]; then percent=0; fi
+    if [ "$percent" -gt 100 ]; then percent=100; fi
+
+    cols=88
+    if command -v tput >/dev/null 2>&1; then
+        detected_cols=$(tput cols 2>/dev/null || echo 88)
+        case "$detected_cols" in
+            ''|*[!0-9]*) detected_cols=88 ;;
+        esac
+        cols=$(( detected_cols - 1 ))
+    fi
+    if [ "$cols" -lt 42 ]; then cols=42; fi
+    if [ "$cols" -gt 96 ]; then cols=96; fi
+
+    prefix="  "
+    percent_text=$(printf '%3d%%' "$percent")
+    min_bar_width=10
+    max_bar_width=34
+    reserved=$(( ${#prefix} + ${#percent_text} + 4 ))
+    max_detail_len=$(( cols - reserved - min_bar_width - 2 ))
+    if [ "$max_detail_len" -lt 0 ]; then max_detail_len=0; fi
+
+    if [ "${#detail}" -gt "$max_detail_len" ]; then
+        if [ "$max_detail_len" -gt 1 ]; then
+            detail="${detail:0:$((max_detail_len - 1))}."
+        else
+            detail=""
+        fi
+    fi
+
+    bar_width=$(( cols - reserved - ${#detail} ))
+    if [ -n "$detail" ]; then bar_width=$((bar_width - 2)); fi
+    if [ "$bar_width" -lt "$min_bar_width" ]; then bar_width=$min_bar_width; fi
+    if [ "$bar_width" -gt "$max_bar_width" ]; then bar_width=$max_bar_width; fi
+
+    filled=$(( (bar_width * percent + 50) / 100 ))
+    empty=$(( bar_width - filled ))
+
+    filled_part=""
+    empty_part=""
+    i=0
+    while [ "$i" -lt "$filled" ]; do
+        filled_part="${filled_part}="
+        i=$((i + 1))
+    done
+    i=0
+    while [ "$i" -lt "$empty" ]; do
+        empty_part="${empty_part}-"
+        i=$((i + 1))
+    done
+
+    printf '\r\033[2K%s' "$prefix"
+    printf '%b%s%b' "$MAGENTA" "$filled_part" "$RESET"
+    printf '%b%s%b' "$GRAY" "$empty_part" "$RESET"
+    printf '  %b%s%b' "$GREEN" "$percent_text" "$RESET"
+    if [ -n "$detail" ]; then
+        printf '%b  %s%b' "$DIM" "$detail" "$RESET"
+    fi
+
+    if [ "$complete" = "1" ]; then
+        printf '\n'
+    fi
+}
+
+ok() {
+    say_color "$GREEN" "[ OK ] $1"
+}
+
+warn() {
+    say_color "$YELLOW" "[WARN] $1"
+}
+
+fail() {
+    say_color "$RED" "[ERROR] $1"
+}
+
+init_log() {
+    mkdir -p "$LOG_DIR"
+    {
+        echo "PHOTO-CAT macOS/Linux setup log"
+        echo "Started: $(date '+%Y-%m-%dT%H:%M:%S')"
+        echo "Project folder: $PROJECT_DIR"
+        echo "Operating system: $OS_NAME"
+        echo
+    } > "$SETUP_LOG"
+}
+
+append_log() {
+    printf "%s\n" "$1" >> "$SETUP_LOG"
+}
 
 print_header() {
-    echo "============================================================"
-    echo "PHOTO-CAT - Linux/macOS easy start"
-    echo "============================================================"
-    echo
-    echo "This launcher will:"
-    echo "  1. Check/install Python if possible."
-    echo "  2. Create the local .venv folder."
-    echo "  3. Install the required libraries."
-    echo "  4. Open the graphical configurator."
-    echo "  5. If you click Save + run in the GUI, start the pipeline in a separate terminal."
+    say_color "$CYAN" "================================================================"
+    say_color "$BOLD$CYAN" "PHOTO-CAT - Setup"
+    say_color "$CYAN" "================================================================"
+    echo "Project folder: $PROJECT_DIR"
+    echo "Setup log:      $SETUP_LOG"
     echo
 }
 
@@ -62,24 +195,24 @@ sudo_cmd() {
     elif command -v sudo >/dev/null 2>&1; then
         sudo "$@"
     else
-        echo "ERROR: sudo was not found and administrator privileges are required."
+        fail "sudo was not found and administrator privileges are required."
         return 1
     fi
 }
 
 install_python_macos() {
-    echo "Python 3.10+ was not found."
-    echo
+    warn "Python 3.10+ was not found."
 
     if command -v brew >/dev/null 2>&1; then
-        echo "Homebrew was found. Installing Python with Homebrew..."
-        echo "This can take a few minutes."
+        step "[1/3] Installing Python with Homebrew..."
+        echo "This may take a few minutes. Homebrew output is shown because it may ask for system permissions."
         echo
         brew install python
         return $?
     fi
 
-    echo "Homebrew was not found, so I cannot safely install Python automatically on this Mac."
+    echo
+    fail "Homebrew was not found, so Python cannot be installed automatically on this Mac."
     echo
     echo "Manual fix:"
     echo "1. Download Python 3.10 or newer from python.org."
@@ -95,8 +228,9 @@ install_python_macos() {
 }
 
 install_python_linux() {
-    echo "Python 3.10+ was not found."
-    echo "I will try to install Python using your Linux package manager."
+    warn "Python 3.10+ was not found."
+    echo "PHOTO-CAT will try to install Python using your Linux package manager."
+    echo "Package manager output is shown because it may ask for administrator permissions."
     echo
 
     if command -v apt-get >/dev/null 2>&1; then
@@ -130,19 +264,20 @@ install_python_linux() {
         return 0
     fi
 
-    echo "ERROR: I could not detect a supported Linux package manager."
+    fail "Could not detect a supported Linux package manager."
     echo
     echo "Manual fix: install Python 3.10+, pip, venv and tkinter using your distribution package manager."
-    echo "Examples:"
-    echo "  Ubuntu/Debian: sudo apt install python3 python3-venv python3-pip python3-tk"
-    echo "  Fedora:        sudo dnf install python3 python3-pip python3-tkinter"
-    echo "  Arch:          sudo pacman -S python python-pip tk"
+    echo
     return 1
 }
 
 ensure_python() {
+    step "[1/3] Checking Python..."
+    progress_bar 0 "[Checking Python]"
+
     if find_python; then
-        echo "Python found: $PYTHON_CMD"
+        ok "Python found: $PYTHON_CMD"
+        progress_bar 100 "[Python ready]" 1
         return 0
     fi
 
@@ -154,81 +289,78 @@ ensure_python() {
             install_python_linux || return 1
             ;;
         *)
-            echo "ERROR: unsupported operating system: $OS_NAME"
+            fail "Unsupported operating system: $OS_NAME"
             echo "Use START_WINDOWS.bat on Windows, or START_UNIX.sh on macOS/Linux."
             return 1
             ;;
     esac
 
     if find_python; then
-        echo
-        echo "Python installed successfully."
-        echo "Python found: $PYTHON_CMD"
+        ok "Python installed successfully: $PYTHON_CMD"
+        progress_bar 100 "[Python ready]" 1
         return 0
     fi
 
-    echo
-    echo "ERROR: Python still was not found, or the installed version is older than 3.10."
+    fail "Python still was not found, or the installed version is older than 3.10."
     return 1
 }
 
 ensure_libraries() {
-    echo
-    echo "Checking/installing the local virtual environment and libraries..."
-    echo
+    step "[2/3] Preparing PHOTO-CAT dependencies..."
     "$PYTHON_CMD" "src/install.py"
+    progress_bar 100 "[Dependencies ready]" 1
 }
 
 configure_tool() {
-    echo
-    echo "Opening the graphical configurator..."
-    echo
+    step "[3/3] Opening the graphical configurator..."
+    progress_bar 0 "[Opening configurator]"
+    progress_bar 100 "[Configurator launched]" 1
     "./.venv/bin/python" "src/configure_gui.py"
 }
 
 run_tool() {
-    echo
-    echo "Running the pipeline with the local virtual environment..."
-    echo
+    step "[3/3] Running PHOTO-CAT pipeline..."
+    progress_bar 0 "[Running pipeline]"
+    progress_bar 100 "[Pipeline launched]" 1
     "./.venv/bin/python" "src/config_and_run.py"
 }
 
 finish_install() {
     echo
-    echo "============================================================"
-    echo "Installation completed successfully."
-    echo "You can now run the starter again to configure and run."
-    echo "============================================================"
+    say_color "$GREEN" "================================================================"
+    say_color "$BOLD$GREEN" "PHOTO-CAT setup completed successfully."
+    say_color "$GREEN" "Run sh START_UNIX.sh again to configure and run."
+    say_color "$GREEN" "================================================================"
     echo
 }
 
 finish_configure() {
     echo
-    echo "============================================================"
-    echo "Configuration completed."
-    echo "You can run the starter again whenever you want."
-    echo "============================================================"
+    say_color "$GREEN" "================================================================"
+    say_color "$BOLD$GREEN" "Configuration completed."
+    say_color "$GREEN" "================================================================"
     echo
 }
 
 finish_done() {
     echo
-    echo "============================================================"
-    echo "Finished successfully."
-    echo "Check the output folder for results."
-    echo "============================================================"
+    say_color "$GREEN" "================================================================"
+    say_color "$BOLD$GREEN" "PHOTO-CAT finished successfully."
+    say_color "$GREEN" "Check the configured output folder for results."
+    say_color "$GREEN" "================================================================"
     echo
 }
 
 error_message() {
     echo
-    echo "============================================================"
-    echo "Something failed."
-    echo "Copy the error text above when asking for help."
-    echo "============================================================"
+    say_color "$RED" "================================================================"
+    fail "Something failed."
+    echo "Detailed setup log: $SETUP_LOG"
+    say_color "$RED" "================================================================"
     echo
 }
 
+init_log
 print_header
 
 if ! ensure_python; then

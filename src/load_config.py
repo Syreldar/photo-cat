@@ -5,6 +5,11 @@ import yaml
 from dataclasses import dataclass
 
 
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+ROOT_CONFIG_PATH = PROJECT_DIR / "config.yaml"
+ENV_CONFIG_PATH = os.environ.get("PHOTO_CAT_CONFIG", "").strip()
+
+
 @dataclass
 class BuildConfig:
     input_catalog: str
@@ -41,7 +46,11 @@ def load_config(section: str, config_path: str | None = None):
       - query_contamination_from_index
     """
     if (config_path is None):
-        config_path = str(Path(__file__).resolve().parent.parent / "config.yaml")
+        config_path = (ENV_CONFIG_PATH or str(ROOT_CONFIG_PATH))
+    else:
+        config_path = os.path.expanduser(str(config_path))
+        if (not os.path.isabs(config_path)):
+            config_path = str(PROJECT_DIR / config_path)
 
     config_path = os.path.abspath(config_path)
     config_dir = os.path.dirname(config_path)

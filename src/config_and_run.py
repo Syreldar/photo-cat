@@ -15,12 +15,13 @@ from pathlib import Path
 import yaml
 
 from logger_setup import get_logger
+from pipeline_display import progress_bar
 
 
 logger = get_logger(__name__)
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = SRC_DIR.parent
-CONFIG_PATH = PROJECT_DIR / "config.yaml"
+CONFIG_PATH = Path(os.environ.get("PHOTO_CAT_CONFIG", str(PROJECT_DIR / "config.yaml"))).resolve()
 
 
 def load_execution_config() -> dict:
@@ -33,11 +34,17 @@ def load_execution_config() -> dict:
     return (config.get("execution", {}) or {})
 
 
-def run_step(script_name: str) -> None:
+def run_step(script_name: str, title: str) -> None:
     script_path = SRC_DIR / script_name
 
     if (not script_path.is_file()):
         raise FileNotFoundError(f"Required script was not found: {script_path}")
+
+    logger.info("")
+    logger.info("============================================================")
+    logger.info("%s", title)
+    logger.info("============================================================")
+    progress_bar(0, f"[{title}]", complete=True)
 
     result = subprocess.run(
         [sys.executable, str(script_path)],
@@ -45,6 +52,9 @@ def run_step(script_name: str) -> None:
         cwd=PROJECT_DIR,
         env={**os.environ},
     )
+
+    if (result.returncode == 0):
+        progress_bar(100, f"[{title}]", complete=True)
 
     if (result.returncode != 0):
         raise RuntimeError(
@@ -64,15 +74,23 @@ def main() -> int:
         logger.warning("Both run_build and run_query are false. Nothing to do.")
         return 0
 
+    stage_total = int(run_build) + int(run_query)
+    stage_index = 0
+
     if (run_build):
-        logger.info("=== Running build_neighbors_index.py ===")
-        run_step("build_neighbors_index.py")
+        stage_index += 1
+        run_step("build_neighbors_index.py", f"Stage {stage_index}/{stage_total} - Build neighbour index")
+        logger.info("Build stage completed successfully.")
 
     if (run_query):
-        logger.info("=== Running query_contamination_from_index.py ===")
-        run_step("query_contamination_from_index.py")
+        stage_index += 1
+        run_step("query_contamination_from_index.py", f"Stage {stage_index}/{stage_total} - Query contamination")
+        logger.info("Query stage completed successfully.")
 
+    logger.info("")
+    logger.info("============================================================")
     logger.info("Pipeline completed successfully.")
+    logger.info("============================================================")
     return 0
 
 

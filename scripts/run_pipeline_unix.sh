@@ -7,6 +7,8 @@ cd "$PROJECT_DIR" || exit 1
 echo "============================================================"
 echo "PHOTO-CAT - Pipeline"
 echo "============================================================"
+echo "Project folder: $PROJECT_DIR"
+echo "Configuration:  $PROJECT_DIR/config.yaml"
 echo
 
 PYTHON_EXE="./.venv/bin/python"

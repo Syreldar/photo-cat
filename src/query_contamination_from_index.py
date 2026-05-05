@@ -104,6 +104,7 @@ from Target_Result import Target_Result
 from Contaminant import Contaminant
 from logger_setup import get_logger
 from load_config import load_config
+from pipeline_display import ActivityBar, tqdm_options
 
 
 logger = get_logger(__name__)
@@ -334,26 +335,47 @@ def load_catalog_arrays(
 
     # --- Resolve target internal IDs (special IDs first, then numeric) ---
     targets_internal: list[int] = []
+    invalid_targets: list[str] = []
+    missing_targets: list[str] = []
+
     for t in targets_real:
-        # 1) special IDs like "HD 216608A" are matched via name_to_internal_special
         if t in name_to_internal_special:
             targets_internal.append(name_to_internal_special[t])
             continue
 
-        # 2) attempt to interpret as numeric ID
         try:
             val = int(t)
         except (ValueError, TypeError):
-            logger.warning(f"Target source_id {t} is neither special nor numeric; skipping.")
+            invalid_targets.append(str(t))
             continue
 
         internal = numeric_real_to_internal(val)
         if internal is not None:
             targets_internal.append(internal)
         else:
-            logger.warning(f"Target numeric source_id {t} not found in index; skipping.")
+            missing_targets.append(str(t))
 
-    logger.info(f"Loaded {len(targets_internal)} targets for analysis.\n")
+    if (invalid_targets):
+        preview = ", ".join(invalid_targets[:8])
+        suffix = "" if (len(invalid_targets) <= 8) else f", ... (+{len(invalid_targets) - 8} more)"
+        logger.warning(
+            "Skipped %d target value(s) because they were neither numeric source_id values nor recognised special IDs. Examples: %s%s",
+            len(invalid_targets),
+            preview,
+            suffix
+        )
+
+    if (missing_targets):
+        preview = ", ".join(missing_targets[:8])
+        suffix = "" if (len(missing_targets) <= 8) else f", ... (+{len(missing_targets) - 8} more)"
+        logger.warning(
+            "Skipped %d target value(s) because they were not found in the built index. Examples: %s%s",
+            len(missing_targets),
+            preview,
+            suffix
+        )
+
+    logger.info("Loaded %d target(s) for analysis.", len(targets_internal))
 
     if (not targets_internal):
         raise ValueError(
@@ -463,7 +485,7 @@ def loop_over_targets(
 
         return ""
 
-    for internal_target in tqdm(targets_internal, desc="Processing targets"):
+    for internal_target in tqdm(targets_internal, **tqdm_options("Processing targets")):
         internal_target = int(internal_target)
 
         # Sanity check: internal_id must be in [1, N].
@@ -636,19 +658,21 @@ def main() -> int:
     # ---------------- LOAD INDEX DATA --------------
     logger.info("Loading index data...")
 
-    offsets = np.load(os.path.join(config_query.INDEX_DIR, "offsets.npy"))
+    with ActivityBar("[loading index arrays]"):
+        offsets = np.load(os.path.join(config_query.INDEX_DIR, "offsets.npy"))
     neighbors_path = os.path.join(config_query.INDEX_DIR, "neighbors_ids.bin")
 
     total_neighbors = int(offsets[-1])
     logger.info(f"Total neighbor entries: {total_neighbors:,}")
 
-    neighbors_mm = np.memmap(
-        neighbors_path,
-        dtype=np.int64,
-        mode='r',
-        shape=(total_neighbors,)
-    )
-    logger.info("Index data loaded.\n")
+    with ActivityBar("[opening neighbour memory map]"):
+        neighbors_mm = np.memmap(
+            neighbors_path,
+            dtype=np.int64,
+            mode='r',
+            shape=(total_neighbors,)
+        )
+    logger.info("Index data loaded.")
 
     # ---------------- LOAD CATALOG ARRAYS ----------
     ra, dec, gmag, real_ids_int, internal_to_special_name, targets_internal = load_catalog_arrays(
@@ -658,8 +682,7 @@ def main() -> int:
         config_query.target_source_id_column
     )
 
-    logger.info(f"Loaded {len(targets_internal)} targets for analysis.\n")
-
+    
     # ---------------- RUN CONTAMINATION LOOP -------
     results = loop_over_targets(
         offsets=offsets,
@@ -675,7 +698,8 @@ def main() -> int:
     )
 
     # ---------------- SAVE RESULTS -----------------
-    json_path = save_results_to_json(results, OUTPUT_JSON)
+    with ActivityBar("[saving JSON results]"):
+        json_path = save_results_to_json(results, OUTPUT_JSON)
 
     logger.info(f"\n[SAVED] Results saved to {json_path}")
     logger.info(f"Total targets processed: {len(results)}")

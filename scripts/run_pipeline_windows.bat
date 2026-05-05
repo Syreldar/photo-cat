@@ -1,12 +1,16 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0\.."
-
+chcp 65001 >nul
+mode con: cols=128 lines=42
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_console_window.ps1" -Columns 128 -Lines 42 >nul 2>nul
 title PHOTO-CAT Pipeline
 
 echo ============================================================
 echo PHOTO-CAT - Pipeline
 echo ============================================================
+echo Project folder: %CD%
+echo Configuration:  %CD%\config.yaml
 echo.
 
 if not exist ".venv\Scripts\python.exe" (

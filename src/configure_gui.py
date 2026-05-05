@@ -9,8 +9,10 @@ library. PyYAML is installed by install.py through requirements.txt.
 import csv
 import os
 import re
+import signal
 import subprocess
 import sys
+import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -67,6 +69,7 @@ DEFAULT_CONFIG = {
     "execution": {
         "run_build": True,
         "run_query": True,
+        "replace_running_pipeline": True,
     },
 }
 
@@ -131,15 +134,22 @@ class ConfigGui(tk.Tk):
         self.calculate_separations_var = tk.BooleanVar()
         self.run_build_var = tk.BooleanVar()
         self.run_query_var = tk.BooleanVar()
+        self.replace_running_pipeline_var = tk.BooleanVar(value=True)
+        self.pipeline_processes = []
+        self.pipeline_sessions = []
         self.targets_text = None
         self.catalog_entry = None
         self._applying_catalog_defaults = False
         self._catalog_auto_update_after_id = None
+        self.section_buttons = {}
+        self.section_frames = {}
+        self.current_section = None
 
         self.create_widgets()
         self.load_values_into_fields()
         self.install_catalog_path_auto_update()
         self.set_advanced_widgets_state()
+        self.protocol("WM_DELETE_WINDOW", self.on_window_close)
         self.center_window()
 
     def load_config(self) -> dict:
@@ -332,6 +342,32 @@ class ConfigGui(tk.Tk):
             foreground=colors["muted"],
             font=("Segoe UI", 9),
         )
+        self.style.configure(
+            "Section.TButton",
+            background=colors["button_bg"],
+            foreground=colors["muted"],
+            bordercolor=colors["border"],
+            padding=(16, 7),
+            font=("Segoe UI", 10, "bold"),
+        )
+        self.style.map(
+            "Section.TButton",
+            background=[("active", colors["button_active"]), ("pressed", colors["button_active"])],
+            foreground=[("active", colors["text"]), ("pressed", colors["text"])],
+        )
+        self.style.configure(
+            "SectionActive.TButton",
+            background=colors["accent"],
+            foreground="#ffffff",
+            bordercolor=colors["accent_active"],
+            padding=(16, 7),
+            font=("Segoe UI", 10, "bold"),
+        )
+        self.style.map(
+            "SectionActive.TButton",
+            background=[("active", colors["accent_active"]), ("pressed", colors["accent_active"])],
+            foreground=[("active", "#ffffff"), ("pressed", "#ffffff")],
+        )
 
     def create_scrollable_tab(self, notebook) -> tuple[ttk.Frame, ttk.Frame]:
         outer = ttk.Frame(notebook)
@@ -382,6 +418,35 @@ class ConfigGui(tk.Tk):
 
         return outer, content
 
+    def create_section(self, key: str, label: str, parent: ttk.Frame, button_parent: ttk.Frame, column: int) -> ttk.Frame:
+        button = ttk.Button(
+            button_parent,
+            text=label,
+            style="Section.TButton",
+            command=lambda section_key=key: self.show_section(section_key),
+        )
+        button.grid(row=0, column=column, sticky="ew", padx=(0, 8))
+        button_parent.columnconfigure(column, weight=0)
+        self.section_buttons[key] = button
+
+        frame = ttk.Frame(parent, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(1, weight=1)
+        self.section_frames[key] = frame
+        return frame
+
+    def show_section(self, key: str) -> None:
+        frame = self.section_frames.get(key)
+        if (frame is None):
+            return
+
+        frame.tkraise()
+        self.current_section = key
+
+        for section_key, button in self.section_buttons.items():
+            style = "SectionActive.TButton" if (section_key == key) else "Section.TButton"
+            button.configure(style=style)
+
     def create_widgets(self) -> None:
         self.geometry("1080x820")
         self.columnconfigure(0, weight=1)
@@ -390,7 +455,7 @@ class ConfigGui(tk.Tk):
         root = ttk.Frame(self, padding=12)
         root.grid(row=0, column=0, sticky="nsew")
         root.columnconfigure(0, weight=1)
-        root.rowconfigure(2, weight=1)
+        root.rowconfigure(3, weight=1)
 
         title = ttk.Label(
             root,
@@ -406,16 +471,17 @@ class ConfigGui(tk.Tk):
         )
         intro.grid(row=1, column=0, sticky="w", pady=(0, 8))
 
-        notebook = ttk.Notebook(root, style="Visible.TNotebook")
-        notebook.grid(row=2, column=0, sticky="nsew")
+        section_bar = ttk.Frame(root)
+        section_bar.grid(row=2, column=0, sticky="w", pady=(0, 8))
 
-        files_outer, files_tab = self.create_scrollable_tab(notebook)
-        settings_outer, settings_tab = self.create_scrollable_tab(notebook)
-        options_outer, options_tab = self.create_scrollable_tab(notebook)
+        section_body = ttk.Frame(root, padding=0)
+        section_body.grid(row=3, column=0, sticky="nsew")
+        section_body.columnconfigure(0, weight=1)
+        section_body.rowconfigure(0, weight=1)
 
-        notebook.add(files_outer, text="Files and columns")
-        notebook.add(settings_outer, text="Search settings")
-        notebook.add(options_outer, text="Run options")
+        files_tab = self.create_section("files", "Files and columns", section_body, section_bar, 0)
+        settings_tab = self.create_section("settings", "Search settings", section_body, section_bar, 1)
+        options_tab = self.create_section("options", "Run options", section_body, section_bar, 2)
 
         for tab in (files_tab, settings_tab, options_tab):
             tab.columnconfigure(1, weight=1)
@@ -556,6 +622,23 @@ class ConfigGui(tk.Tk):
         ttk.Checkbutton(checks, text="Store neighbor separations on disk", variable=self.calculate_separations_var).grid(row=1, column=0, sticky="w", pady=2)
         ttk.Checkbutton(checks, text="Run build step", variable=self.run_build_var).grid(row=2, column=0, sticky="w", pady=2)
         ttk.Checkbutton(checks, text="Run query step", variable=self.run_query_var).grid(row=3, column=0, sticky="w", pady=2)
+        ttk.Checkbutton(
+            checks,
+            text="Replace running pipeline when Save + run is clicked",
+            variable=self.replace_running_pipeline_var
+        ).grid(row=4, column=0, sticky="w", pady=(8, 2))
+
+        replace_note = ttk.Label(
+            checks,
+            text=(
+                "Enabled: the previous pipeline window opened by this GUI is closed before a new run starts. "
+                "Disabled: each Save + run opens a separate pipeline window."
+            ),
+            style="Muted.TLabel",
+            wraplength=900,
+            justify="left"
+        )
+        replace_note.grid(row=5, column=0, sticky="w", pady=(0, 2))
 
         help_box = ttk.LabelFrame(options_tab, text="Quick help", padding=8)
         help_box.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(12, 0))
@@ -576,13 +659,15 @@ class ConfigGui(tk.Tk):
         quick_help.grid(row=0, column=0, sticky="w")
 
         buttons = ttk.Frame(root)
-        buttons.grid(row=3, column=0, sticky="ew", pady=(12, 0))
+        buttons.grid(row=4, column=0, sticky="ew", pady=(12, 0))
         buttons.columnconfigure(4, weight=1)
 
         ttk.Button(buttons, text="Help", command=self.show_help).grid(row=0, column=0, padx=(0, 8))
         ttk.Button(buttons, text="Load example config", command=self.load_example_config).grid(row=0, column=1, padx=(0, 8))
         ttk.Button(buttons, text="Save config.yaml", command=self.save_config).grid(row=0, column=2, padx=(0, 8))
         ttk.Button(buttons, text="Save + run", command=self.save_and_run, style="Accent.TButton").grid(row=0, column=3)
+
+        self.show_section("files")
 
     def add_file_row(self, parent, row: int, label: str, variable: tk.StringVar, command):
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4)
@@ -628,6 +713,7 @@ class ConfigGui(tk.Tk):
         self.calculate_separations_var.set(bool(build_settings.get("calculate_separations", False)))
         self.run_build_var.set(bool(execution.get("run_build", True)))
         self.run_query_var.set(bool(execution.get("run_query", True)))
+        self.replace_running_pipeline_var.set(bool(execution.get("replace_running_pipeline", True)))
         self.advanced_settings_var.set(False)
         self.set_manual_targets_text(query_io.get("targets", []) or [])
         self.set_advanced_widgets_state()
@@ -1126,6 +1212,7 @@ class ConfigGui(tk.Tk):
             "execution": {
                 "run_build": bool(self.run_build_var.get()),
                 "run_query": bool(self.run_query_var.get()),
+                "replace_running_pipeline": bool(self.replace_running_pipeline_var.get()),
             },
         }
 
@@ -1171,39 +1258,83 @@ class ConfigGui(tk.Tk):
             return
 
         try:
-            if (os.name == "nt"):
-                runner_path = PROJECT_DIR / "scripts" / "run_pipeline_windows.bat"
-                if (runner_path.is_file()):
-                    subprocess.Popen(
-                        ["cmd.exe", "/c", "start", "PHOTO-CAT Pipeline", str(runner_path)],
-                        cwd=PROJECT_DIR
-                    )
-                else:
-                    subprocess.Popen(
-                        [str(python_exe), str(SRC_DIR / "config_and_run.py")],
-                        cwd=PROJECT_DIR,
-                        creationflags=subprocess.CREATE_NEW_CONSOLE
-                    )
-            else:
-                runner_path = PROJECT_DIR / "scripts" / "run_pipeline_unix.sh"
-                if (runner_path.is_file()):
-                    try:
-                        runner_path.chmod(runner_path.stat().st_mode | 0o111)
-                    except Exception:
-                        pass
+            self.cleanup_finished_pipeline_processes()
 
-                    if (sys.platform == "darwin"):
-                        subprocess.Popen(["open", "-a", "Terminal", str(runner_path)], cwd=PROJECT_DIR)
-                    else:
-                        self.open_unix_terminal(runner_path)
-                else:
-                    subprocess.Popen([str(python_exe), str(SRC_DIR / "config_and_run.py")], cwd=PROJECT_DIR)
+            if (self.replace_running_pipeline_var.get()):
+                self.close_pipeline_windows()
 
-            self.after(250, self.destroy)
+            self.start_pipeline_window(python_exe)
         except Exception as exc:
             messagebox.showerror("Run failed", f"Could not start the pipeline.\n\n{exc}")
 
-    def open_unix_terminal(self, runner_path: Path) -> None:
+    def start_pipeline_window(self, python_exe: Path) -> None:
+        env = os.environ.copy()
+        env["PHOTO_CAT_PROJECT_DIR"] = str(PROJECT_DIR)
+        env["PHOTO_CAT_CONFIG"] = str(CONFIG_PATH)
+
+        if (os.name == "nt"):
+            runner_path = PROJECT_DIR / "scripts" / "run_pipeline_windows.bat"
+            if (runner_path.is_file()):
+                process = subprocess.Popen(
+                    ["cmd.exe", "/c", str(runner_path)],
+                    cwd=PROJECT_DIR,
+                    env=env,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                )
+            else:
+                process = subprocess.Popen(
+                    [str(python_exe), str(SRC_DIR / "config_and_run.py")],
+                    cwd=PROJECT_DIR,
+                    env=env,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                )
+
+            self.pipeline_processes.append(process)
+            return
+
+        runner_path = PROJECT_DIR / "scripts" / "run_pipeline_unix.sh"
+        if (runner_path.is_file()):
+            try:
+                runner_path.chmod(runner_path.stat().st_mode | 0o111)
+            except Exception:
+                pass
+
+            if (sys.platform == "darwin"):
+                self.open_macos_terminal(runner_path, env)
+            else:
+                self.open_unix_terminal(runner_path, env)
+        else:
+            process = subprocess.Popen(
+                [str(python_exe), str(SRC_DIR / "config_and_run.py")],
+                cwd=PROJECT_DIR,
+                env=env,
+                start_new_session=True,
+            )
+            self.pipeline_processes.append(process)
+
+    def open_macos_terminal(self, runner_path: Path, env: dict) -> None:
+        session_id = f"{os.getpid()}-{int(time.time() * 1000)}"
+        title = f"PHOTO-CAT Pipeline {session_id}"
+        command = (
+            f'cd "{PROJECT_DIR}"; '
+            f'export PHOTO_CAT_PROJECT_DIR="{PROJECT_DIR}"; '
+            f'export PHOTO_CAT_CONFIG="{CONFIG_PATH}"; '
+            f'export PHOTO_CAT_PIPELINE_TITLE="{title}"; '
+            f'bash "{runner_path}"'
+        )
+        escaped_command = command.replace('\\', '\\\\').replace('"', '\\"')
+        escaped_title = title.replace('"', '\\"')
+        script = (
+            'tell application "Terminal"\n'
+            f'    set newTab to do script "{escaped_command}"\n'
+            f'    set custom title of newTab to "{escaped_title}"\n'
+            '    activate\n'
+            'end tell\n'
+        )
+        subprocess.Popen(["osascript", "-e", script], cwd=PROJECT_DIR, env=env)
+        self.pipeline_sessions.append(title)
+
+    def open_unix_terminal(self, runner_path: Path, env: dict) -> None:
         runner_cmd = f'bash "{runner_path}"'
         terminal_commands = [
             ["x-terminal-emulator", "-e", "bash", "-lc", runner_cmd],
@@ -1216,12 +1347,71 @@ class ConfigGui(tk.Tk):
 
         for command in terminal_commands:
             try:
-                subprocess.Popen(command, cwd=PROJECT_DIR)
+                process = subprocess.Popen(command, cwd=PROJECT_DIR, env=env, start_new_session=True)
+                self.pipeline_processes.append(process)
                 return
             except FileNotFoundError:
                 continue
 
-        subprocess.Popen(["bash", str(runner_path)], cwd=PROJECT_DIR)
+        process = subprocess.Popen(["bash", str(runner_path)], cwd=PROJECT_DIR, env=env, start_new_session=True)
+        self.pipeline_processes.append(process)
+
+    def cleanup_finished_pipeline_processes(self) -> None:
+        self.pipeline_processes = [process for process in self.pipeline_processes if (process.poll() is None)]
+
+    def terminate_process_tree(self, process: subprocess.Popen) -> None:
+        if (process.poll() is not None):
+            return
+
+        if (os.name == "nt"):
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            return
+
+        try:
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception:
+            try:
+                process.terminate()
+            except Exception:
+                pass
+
+    def close_macos_terminal_sessions(self) -> None:
+        if (sys.platform != "darwin" or not self.pipeline_sessions):
+            return
+
+        for title in list(self.pipeline_sessions):
+            escaped_title = title.replace('"', '\\"')
+            script = (
+                'tell application "Terminal"\n'
+                '    repeat with w in windows\n'
+                '        repeat with t in tabs of w\n'
+                f'            if custom title of t is "{escaped_title}" then\n'
+                '                close w\n'
+                '                exit repeat\n'
+                '            end if\n'
+                '        end repeat\n'
+                '    end repeat\n'
+                'end tell\n'
+            )
+            subprocess.run(["osascript", "-e", script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+        self.pipeline_sessions = []
+
+    def close_pipeline_windows(self) -> None:
+        self.cleanup_finished_pipeline_processes()
+        for process in list(self.pipeline_processes):
+            self.terminate_process_tree(process)
+        self.pipeline_processes = []
+        self.close_macos_terminal_sessions()
+
+    def on_window_close(self) -> None:
+        self.close_pipeline_windows()
+        self.destroy()
 
     def find_venv_python(self) -> Path | None:
         if (os.name == "nt"):

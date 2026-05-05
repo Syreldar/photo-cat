@@ -114,6 +114,7 @@ from numpy.typing import NDArray
 
 from logger_setup import get_logger
 from load_config import load_config
+from pipeline_display import ActivityBar, progress_bar, tqdm_options
 
 
 logger = get_logger(__name__)
@@ -230,7 +231,6 @@ def load_star_dataframe(
     if use_dask:
         try:
             import dask.dataframe as dd
-            from dask.diagnostics import ProgressBar
         except ImportError as exc:
             raise ImportError(
                 "Dask is required when use_dask is true. "
@@ -244,14 +244,15 @@ def load_star_dataframe(
             dtype={source_id_column: "object"},
             assume_missing=True
         )
-        with ProgressBar():
+        with ActivityBar("[loading catalog with Dask]"):
             star_dataframe = star_input_catalog.compute()
     else:
-        star_dataframe = pd.read_csv(
-            input_catalog,
-            usecols=usecolumns,
-            dtype={source_id_column: "object"}
-        )
+        with ActivityBar("[loading catalog with Pandas]"):
+            star_dataframe = pd.read_csv(
+                input_catalog,
+                usecols=usecolumns,
+                dtype={source_id_column: "object"}
+            )
 
     star_dataframe = star_dataframe.rename(
         columns={
@@ -419,14 +420,16 @@ def build_or_load_kdtree(
 
     if os.path.exists(tree_path):
         logger.info(f"Loading existing KDTree from {tree_path} ...")
-        with open(tree_path, "rb") as f:
-            coordinate_tree = pickle.load(f)
+        with ActivityBar("[loading KDTree]"):
+            with open(tree_path, "rb") as f:
+                coordinate_tree = pickle.load(f)
     else:
         logger.info("Building cKDTree...")
-        coordinate_tree = cKDTree(coords)
-        with open(tree_path, "wb") as f:
-            pickle.dump(coordinate_tree, f)
-        logger.info(f"Saved KDTree to {tree_path}\n")
+        with ActivityBar("[building KDTree]"):
+            coordinate_tree = cKDTree(coords)
+            with open(tree_path, "wb") as f:
+                pickle.dump(coordinate_tree, f)
+        logger.info(f"Saved KDTree to {tree_path}")
 
     return coordinate_tree, tree_path
 
@@ -558,9 +561,8 @@ def calculate_contaminants(
     progress = tqdm(
         total=number_of_stars_in_dataframe,
         initial=checkpoint_index,
-        unit='stars',
-        ncols=80,
-        desc="Processing blocks"
+        unit="stars",
+        **tqdm_options("Building index")
     )
 
     # Python-side buffers to collect neighbors from several blocks before
@@ -901,14 +903,15 @@ def main() -> int:
     )
 
     # Finalize files and write auxiliary arrays.
-    master_path = save_final_outputs(
-        out_dir=config_build.out_dir,
-        final_star_dataframe=final_star_dataframe,
-        offsets=offsets,
-        neighbors_tmp_path=neighbors_tmp_path,
-        separations_tmp_path=separations_tmp_path,
-        calculate_separations=config_build.calculate_separations
-    )
+    with ActivityBar("[saving index outputs]"):
+        master_path = save_final_outputs(
+            out_dir=config_build.out_dir,
+            final_star_dataframe=final_star_dataframe,
+            offsets=offsets,
+            neighbors_tmp_path=neighbors_tmp_path,
+            separations_tmp_path=separations_tmp_path,
+            calculate_separations=config_build.calculate_separations
+        )
 
     # Summary.
     logger.info(f"\nIndex saved to: {config_build.out_dir}")
