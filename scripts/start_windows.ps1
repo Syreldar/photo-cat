@@ -32,6 +32,17 @@ function Write-Title {
     Write-Host ""
 }
 
+function Get-PythonDisplay {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Command,
+        [string[]]$PrefixArgs = @()
+    )
+
+    $parts = @($Command) + @($PrefixArgs)
+    return (($parts | Where-Object { $_ -ne $null -and $_ -ne "" }) -join " ").Trim()
+}
+
 function Test-PythonCommand {
     param(
         [Parameter(Mandatory = $true)]
@@ -46,8 +57,8 @@ function Test-PythonCommand {
         if ($LASTEXITCODE -eq 0) {
             return [pscustomobject]@{
                 Command = $Command
-                PrefixArgs = $PrefixArgs
-                Display = (($Command, $PrefixArgs) -join " ").Trim()
+                PrefixArgs = @($PrefixArgs)
+                Display = Get-PythonDisplay -Command $Command -PrefixArgs $PrefixArgs
             }
         }
     }

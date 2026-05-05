@@ -8,8 +8,7 @@ Use a clean folder, extract the project, then test the beginner flow:
 
 ```text
 Windows: double-click START_WINDOWS.bat
-macOS:   double-click START_MACOS.command
-Linux:   run ./START_LINUX.sh
+macOS/Linux: open Terminal in the photo-cat folder and run: sh START_UNIX.sh
 ```
 
 Confirm that:
@@ -105,14 +104,14 @@ Repository page -> Releases -> Draft a new release
 Use:
 
 ```text
-Tag: v1.0.1
-Title: PHOTO-CAT v1.0.1
+Tag: v1.0.3
+Title: PHOTO-CAT v1.0.3
 ```
 
 Attach a manually created ZIP named:
 
 ```text
-photo-cat-v1.0.1.zip
+photo-cat-v1.0.3.zip
 ```
 
 Do not rely only on GitHub's automatic "Source code (zip)" asset. A clearly named release ZIP is easier for non-technical users.
@@ -120,25 +119,24 @@ Do not rely only on GitHub's automatic "Source code (zip)" asset. A clearly name
 ## 7. Suggested release notes
 
 ```markdown
-# PHOTO-CAT v1.0.1
+# PHOTO-CAT v1.0.3
 
 First public release.
 
 ## Quick start
 
-1. Download `photo-cat-v1.0.1.zip` from this release.
+1. Download `photo-cat-v1.0.3.zip` from this release.
 2. Extract the ZIP.
 3. Run the starter for your operating system:
    - Windows: double-click `START_WINDOWS.bat`
-   - macOS: double-click `START_MACOS.command`
-   - Linux: run `./START_LINUX.sh`
+   - macOS/Linux: open Terminal in the folder and run `sh START_UNIX.sh`
 4. Select your Catalog CSV in the GUI.
 5. Check the column names.
 6. Click `Save + run`.
 
 ## Included
 
-- Windows, macOS and Linux launchers.
+- Windows launcher and shared macOS/Linux Unix launcher.
 - Automatic local virtual environment setup.
 - Automatic dependency installation.
 - GUI configurator for `config.yaml`.
@@ -146,6 +144,9 @@ First public release.
 - Manual source_id target list support.
 - Example CSV files.
 - English and Italian documentation.
+- How to cite section in README.md.
+- macOS/Linux Save + run starts the pipeline in a separate terminal.
+- Catalog CSV path changes auto-fill related paths even when typed manually.
 
 ## Requirements
 

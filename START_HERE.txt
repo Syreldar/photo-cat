@@ -1,28 +1,15 @@
-PHOTO-CAT - Photometric Contamination Analyzer Tool - Start Here
+PHOTO-CAT quick start
 
-1. Extract the ZIP.
-2. Run the starter for your operating system:
+Windows:
+1. Double-click START_WINDOWS.bat.
 
-   Windows: double-click START_WINDOWS.bat
-   macOS:   double-click START_MACOS.command
-   Linux:   run ./START_LINUX.sh
+macOS / Linux:
+1. Open Terminal in the photo-cat folder.
+2. Run:
+   sh START_UNIX.sh
 
-3. Select your Catalog CSV in the GUI.
-4. Check the auto-filled Targets CSV and output/index folder.
-5. Check the column names.
-
-   Default Gaia-like names:
-   source_id, ra, dec, phot_g_mean_mag
-
-   Column names are case-sensitive.
-   Example: RA is different from ra.
-
-6. Click Save + run.
-
-If you do not have Python, the starter will try to install it automatically where possible.
-
-
-If an error appears:
-- read the message in the popup or console;
-- fix the file path or column names in the GUI;
-- remember that column names are case-sensitive.
+Beginner workflow:
+1. Select Catalog CSV.
+2. PHOTO-CAT auto-fills Targets CSV, Output/index folder, and Query index folder.
+3. Check the column names. They are case-sensitive.
+4. Click Save + run.

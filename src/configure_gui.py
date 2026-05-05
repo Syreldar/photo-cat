@@ -133,9 +133,12 @@ class ConfigGui(tk.Tk):
         self.run_query_var = tk.BooleanVar()
         self.targets_text = None
         self.catalog_entry = None
+        self._applying_catalog_defaults = False
+        self._catalog_auto_update_after_id = None
 
         self.create_widgets()
         self.load_values_into_fields()
+        self.install_catalog_path_auto_update()
         self.set_advanced_widgets_state()
         self.center_window()
 
@@ -673,9 +676,13 @@ class ConfigGui(tk.Tk):
         if (path_value == ""):
             return ""
 
-        path_obj = Path(path_value)
+        path_obj = Path(path_value).expanduser()
         try:
-            resolved = path_obj.resolve()
+            if (path_obj.is_absolute()):
+                resolved = path_obj.resolve()
+            else:
+                resolved = (PROJECT_DIR / path_obj).resolve()
+
             relative = resolved.relative_to(PROJECT_DIR.resolve())
             return relative.as_posix()
         except Exception:
@@ -691,6 +698,13 @@ class ConfigGui(tk.Tk):
             return path_obj
 
         return (PROJECT_DIR / path_obj)
+
+    def resolve_path(self, path_value: str) -> Path:
+        path_obj = self.resolve_user_path(path_value)
+        if (path_obj is None):
+            raise ValueError("Path cannot be empty.")
+
+        return path_obj
 
     def read_csv_header(self, path_value: str) -> list[str]:
         path_obj = self.resolve_user_path(path_value)
@@ -833,7 +847,12 @@ class ConfigGui(tk.Tk):
         if (catalog_path == ""):
             return ""
 
-        catalog_dir = Path(catalog_path).parent
+        path_obj = Path(catalog_path).expanduser()
+        if (path_obj.is_absolute()):
+            catalog_dir = path_obj.parent
+        else:
+            catalog_dir = Path(catalog_path).parent
+
         if (str(catalog_dir) in ("", ".")):
             output_dir = Path("output")
         else:
@@ -841,18 +860,44 @@ class ConfigGui(tk.Tk):
 
         return self.make_project_relative_path(output_dir.as_posix())
 
-    def apply_catalog_defaults(self, catalog_path: str) -> None:
+    def install_catalog_path_auto_update(self) -> None:
+        self.input_catalog_var.trace_add("write", self.schedule_catalog_defaults_from_trace)
+
+    def schedule_catalog_defaults_from_trace(self, *args) -> None:
+        if (self._applying_catalog_defaults):
+            return
+
+        if (self._catalog_auto_update_after_id is not None):
+            try:
+                self.after_cancel(self._catalog_auto_update_after_id)
+            except Exception:
+                pass
+
+        self._catalog_auto_update_after_id = self.after(250, self.apply_catalog_defaults_from_trace)
+
+    def apply_catalog_defaults_from_trace(self) -> None:
+        self._catalog_auto_update_after_id = None
+        self.apply_catalog_defaults(self.input_catalog_var.get(), update_catalog_var=False)
+
+    def apply_catalog_defaults(self, catalog_path: str, update_catalog_var: bool = True) -> None:
         catalog_path = self.make_project_relative_path(catalog_path)
         if (catalog_path == ""):
             return
 
         output_dir = self.get_default_output_dir_for_catalog(catalog_path)
-        self.input_catalog_var.set(catalog_path)
-        self.targets_input_var.set(catalog_path)
 
-        if (output_dir != ""):
-            self.out_dir_var.set(output_dir)
-            self.index_dir_var.set(output_dir)
+        self._applying_catalog_defaults = True
+        try:
+            if (update_catalog_var):
+                self.input_catalog_var.set(catalog_path)
+
+            self.targets_input_var.set(catalog_path)
+
+            if (output_dir != ""):
+                self.out_dir_var.set(output_dir)
+                self.index_dir_var.set(output_dir)
+        finally:
+            self._applying_catalog_defaults = False
 
     def apply_catalog_defaults_from_event(self, event=None) -> None:
         self.apply_catalog_defaults(self.input_catalog_var.get())
@@ -1140,11 +1185,43 @@ class ConfigGui(tk.Tk):
                         creationflags=subprocess.CREATE_NEW_CONSOLE
                     )
             else:
-                subprocess.Popen([str(python_exe), str(SRC_DIR / "config_and_run.py")], cwd=PROJECT_DIR)
+                runner_path = PROJECT_DIR / "scripts" / "run_pipeline_unix.sh"
+                if (runner_path.is_file()):
+                    try:
+                        runner_path.chmod(runner_path.stat().st_mode | 0o111)
+                    except Exception:
+                        pass
+
+                    if (sys.platform == "darwin"):
+                        subprocess.Popen(["open", "-a", "Terminal", str(runner_path)], cwd=PROJECT_DIR)
+                    else:
+                        self.open_unix_terminal(runner_path)
+                else:
+                    subprocess.Popen([str(python_exe), str(SRC_DIR / "config_and_run.py")], cwd=PROJECT_DIR)
 
             self.after(250, self.destroy)
         except Exception as exc:
             messagebox.showerror("Run failed", f"Could not start the pipeline.\n\n{exc}")
+
+    def open_unix_terminal(self, runner_path: Path) -> None:
+        runner_cmd = f'bash "{runner_path}"'
+        terminal_commands = [
+            ["x-terminal-emulator", "-e", "bash", "-lc", runner_cmd],
+            ["gnome-terminal", "--", "bash", "-lc", runner_cmd],
+            ["konsole", "-e", "bash", "-lc", runner_cmd],
+            ["xfce4-terminal", "--command", runner_cmd],
+            ["mate-terminal", "--", "bash", "-lc", runner_cmd],
+            ["xterm", "-e", "bash", "-lc", runner_cmd],
+        ]
+
+        for command in terminal_commands:
+            try:
+                subprocess.Popen(command, cwd=PROJECT_DIR)
+                return
+            except FileNotFoundError:
+                continue
+
+        subprocess.Popen(["bash", str(runner_path)], cwd=PROJECT_DIR)
 
     def find_venv_python(self) -> Path | None:
         if (os.name == "nt"):

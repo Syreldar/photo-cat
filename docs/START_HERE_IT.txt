@@ -1,20 +1,15 @@
-PHOTO-CAT - Photometric Contamination Analyzer Tool - Inizia qui
+PHOTO-CAT avvio rapido
 
-1. Estrai lo ZIP.
-2. Avvia il file per il tuo sistema operativo:
+Windows:
+1. Doppio click su START_WINDOWS.bat.
 
-   Windows: doppio click su START_WINDOWS.bat
-   macOS:   doppio click su START_MACOS.command
-   Linux:   esegui ./START_LINUX.sh
+macOS / Linux:
+1. Apri Terminal nella cartella photo-cat.
+2. Esegui:
+   sh START_UNIX.sh
 
-3. Seleziona il Catalog CSV nella GUI.
-4. Controlla Targets CSV e cartella output/index compilati automaticamente.
-5. Controlla i nomi colonna.
-
-   Nomi default stile Gaia:
-   source_id, ra, dec, phot_g_mean_mag
-
-   I nomi colonna sono case-sensitive.
-   Esempio: RA è diverso da ra.
-
-6. Clicca Save + run.
+Flusso base:
+1. Seleziona Catalog CSV.
+2. PHOTO-CAT compila automaticamente Targets CSV, Output/index folder e Query index folder.
+3. Controlla i nomi colonna. Sono case-sensitive.
+4. Clicca Save + run.

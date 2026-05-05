@@ -6,8 +6,7 @@ Normal users do not need to open this folder. They should use the launcher in th
 
 ```text
 START_WINDOWS.bat
-START_MACOS.command
-START_LINUX.sh
+START_UNIX.sh
 ```
 
 Important entry points:

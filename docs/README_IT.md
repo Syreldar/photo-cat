@@ -1,77 +1,114 @@
 # PHOTO-CAT - Photometric Contamination Analyzer Tool
 
-PHOTO-CAT è un tool Python con launcher semplice per creare un indice dei vicini da un catalogo fotometrico CSV e interrogare possibili contaminazioni per sorgenti target.
+PHOTO-CAT è uno strumento Python per la valutazione della contaminazione fotometrica in cataloghi astronomici. Il software costruisce un indice spaziale dei vicini a partire da un catalogo fotometrico e valuta le possibili sorgenti contaminanti intorno a un insieme selezionato di target.
 
-Il progetto è pensato per utenti non tecnici: scaricano lo ZIP della release, lo estraggono e avviano un solo file.
+Il pacchetto è pensato per workflow di analisi fotometrica a livello di catalogo, dove sono richieste configurazioni riproducibili, esecuzione locale e validazione chiara dei dati in ingresso.
 
-## Avvio rapido
+## Panoramica
 
-Scarica lo ZIP della release, estrailo, poi avvia il file corretto per il tuo sistema operativo:
+PHOTO-CAT svolge due operazioni principali:
 
-```text
-Windows: doppio click su START_WINDOWS.bat
-macOS:   doppio click su START_MACOS.command
-Linux:   esegui ./START_LINUX.sh
-```
+1. costruzione di un indice dei vicini da un catalogo fotometrico in ingresso;
+2. interrogazione dell'indice per identificare potenziali sorgenti contaminanti associate ai target selezionati.
 
-Il launcher gestisce il flusso base:
+Il progetto include un configuratore grafico per la preparazione di `config.yaml`, launcher multipiattaforma per l'esecuzione locale e controlli di validazione per gli errori di configurazione più comuni.
 
-```text
-controlla/installa Python dove possibile -> crea .venv -> installa librerie -> apre GUI -> esegue pipeline
-```
+## Piattaforme supportate
 
-## Cosa fa automaticamente la GUI
-
-Quando scegli `Catalog CSV`, la GUI imposta automaticamente:
+PHOTO-CAT fornisce launcher per:
 
 ```text
-Targets CSV         = stesso file del Catalog CSV
-Output/index folder = cartella_del_catalog/output
-Query index folder  = stesso Output/index folder
+Windows       START_WINDOWS.bat
+macOS/Linux   sh START_UNIX.sh
 ```
 
-Poi clicca `Save + run`.
+I launcher creano un virtual environment Python locale e installano le dipendenze richieste nella cartella `.venv`.
 
-## Colonne richieste
+È richiesto Python 3.10 o successivo.
 
-I nomi colonna predefiniti sono in stile Gaia:
+## Dati in ingresso
+
+PHOTO-CAT utilizza file CSV come dati in ingresso.
+
+Lo schema predefinito del catalogo segue nomi di colonna di tipo Gaia:
 
 ```text
-Catalog CSV: source_id, ra, dec, phot_g_mean_mag
-Targets CSV: source_id
+source_id
+ra
+dec
+phot_g_mean_mag
 ```
 
-Puoi modificarli nella GUI se il tuo CSV usa header diversi.
-
-I nomi colonna sono **case-sensitive**. Esempi:
+La colonna identificativa predefinita per i target è:
 
 ```text
-ra è diverso da RA
-Dec è diverso da dec
-phot_g_mean_mag è diverso da PHOT_G_MEAN_MAG
+source_id
 ```
 
-Quindi i nomi scritti nella GUI devono combaciare esattamente con quelli nel CSV.
+I nomi delle colonne sono case-sensitive e devono coincidere esattamente con l'header del CSV. Schemi di catalogo differenti possono essere configurati tramite l'interfaccia grafica.
 
-## Target manuali
+È anche possibile utilizzare una lista manuale di valori `source_id` invece di un file CSV dei target.
 
-Puoi svuotare `Targets CSV` e inserire source_id manuali nella sezione `Manual targets`. La GUI salverà:
+## Configurazione
 
-```yaml
-TARGETS_INPUT: null
-targets:
-  - 123456789012345678
-  - 987654321098765432
+Il file principale di configurazione è:
+
+```text
+config.yaml
 ```
 
-## Note Windows dark mode
+Il metodo raccomandato per modificarlo è utilizzare il configuratore grafico avviato dal launcher della piattaforma.
 
-Su Windows, la GUI prova a rilevare automaticamente la modalità scura delle app e applica un tema scuro. Le finestre di dialogo di sistema possono comunque restare dipendenti dal tema nativo di Windows.
+Quando viene selezionato un catalogo CSV, PHOTO-CAT può inizializzare automaticamente il file dei target e i percorsi di output/index corrispondenti. Tutti questi valori restano modificabili prima dell'esecuzione.
 
-## Pubblicazione
+## Struttura del progetto
 
-Le istruzioni per pubblicare il progetto su GitHub e creare una release sono in:
+```text
+START_WINDOWS.bat      Launcher Windows
+START_UNIX.sh          Launcher macOS/Linux
+START_HERE.txt         Note minime di avvio
+config.yaml            Configurazione runtime
+requirements.txt       Dipendenze Python
+data/                  Piccoli file di input di riferimento
+src/                   Codice sorgente
+scripts/               Script di supporto ai launcher
+docs/                  Documentazione aggiuntiva
+```
+
+## Validazione e gestione degli errori
+
+PHOTO-CAT valida, dove possibile prima dell'esecuzione, i file selezionati, i nomi delle colonne configurate, le cartelle di output, i campi numerici del catalogo e i percorsi dell'indice.
+
+Gli errori di configurazione vengono riportati in forma leggibile per ridurre la dipendenza da traceback Python durante l'uso ordinario.
+
+## Documentazione
+
+La documentazione aggiuntiva è disponibile in:
+
+```text
+docs/
+```
+
+Le note per pubblicazione e release sono disponibili in:
 
 ```text
 docs/PUBLISHING.md
 ```
+
+## Citazione
+
+In qualsiasi materiale pubblicato che utilizzi PHOTO-CAT, includere la seguente citazione e il seguente acknowledgement.
+
+### Riferimento
+
+```text
+<paper reference>
+```
+
+### Acknowledgement
+
+```text
+This research made use of Photo-cat, a Python package for photometric contamination analysis (<paper reference>), developed with the support of Blue Skies Space Ltd. (www.bssl.space).
+```
+
+Sostituire `<paper reference>` con il riferimento bibliografico definitivo quando disponibile.

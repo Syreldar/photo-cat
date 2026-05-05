@@ -30,7 +30,7 @@ print_header() {
     echo "  2. Create the local .venv folder."
     echo "  3. Install the required libraries."
     echo "  4. Open the graphical configurator."
-    echo "  5. Optionally run the pipeline."
+    echo "  5. If you click Save + run in the GUI, start the pipeline in a separate terminal."
     echo
 }
 
@@ -84,7 +84,7 @@ install_python_macos() {
     echo "Manual fix:"
     echo "1. Download Python 3.10 or newer from python.org."
     echo "2. Install it."
-    echo "3. Re-open this folder and double-click START_MACOS.command again."
+    echo "3. Re-open Terminal in the PHOTO-CAT folder and run: sh START_UNIX.sh"
     echo
 
     if command -v open >/dev/null 2>&1; then
@@ -155,7 +155,7 @@ ensure_python() {
             ;;
         *)
             echo "ERROR: unsupported operating system: $OS_NAME"
-            echo "Use START_WINDOWS.bat on Windows, START_MACOS.command on macOS, or START_LINUX.sh on Linux."
+            echo "Use START_WINDOWS.bat on Windows, or START_UNIX.sh on macOS/Linux."
             return 1
             ;;
     esac
@@ -260,23 +260,5 @@ if ! configure_tool; then
     exit 1
 fi
 
-if [ "$MODE" = "CONFIGURE" ]; then
-    finish_configure
-    exit 0
-fi
-
-echo
-printf "Run the tool now? [y/N]: "
-read -r answer
-case "$answer" in
-    y|Y|yes|YES|Yes)
-        if ! run_tool; then
-            error_message
-            exit 1
-        fi
-        finish_done
-        ;;
-    *)
-        finish_configure
-        ;;
-esac
+finish_configure
+exit 0
