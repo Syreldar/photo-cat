@@ -140,8 +140,10 @@ Replace `<paper reference>` with the final paper reference once available.
 ## Acknowledgements
 
 The authors gratefully acknowledge:
-E. Drago for key contributions to the software implementation, testing workflow and the technical refinement of PHOTO-CAT.
-J. Burgio for the design and creation of the PHOTO-CAT logo and visual identity.
+
+- E. Drago for key contributions to the software implementation, testing workflow and the technical refinement of PHOTO-CAT.
+
+- J. Burgio for the design and creation of the PHOTO-CAT logo and visual identity.
 
 ## License
 

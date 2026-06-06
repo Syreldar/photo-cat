@@ -141,8 +141,10 @@ Sostituisci `<paper reference>` con il riferimento finale dell’articolo quando
 ## Ringraziamenti
 
 Gli autori ringraziano:
-E. Drago per i contributi fondamentali all'implementazione del software, al processo di testing e al perfezionamento tecnico di PHOTO-CAT.
-J. Burgio per la progettazione e la creazione del logo e dell'identità visiva di PHOTO-CAT.
+
+- E. Drago per i contributi fondamentali all'implementazione del software, al processo di testing e al perfezionamento tecnico di PHOTO-CAT.
+
+- J. Burgio per la progettazione e la creazione del logo e dell'identità visiva di PHOTO-CAT.
 
 ## Licenza
 
