@@ -1,0 +1,50 @@
+# Contributing to PHOTO-CAT
+
+Thank you for considering a contribution to PHOTO-CAT.
+
+## Before opening a pull request
+
+1. Start from the latest `main` branch.
+2. Keep changes focused and easy to review.
+3. Do not commit generated files such as `.venv/`, `.runtime/`, `logs/`, `output/`, `data/output/`, `__pycache__/`, or `*.pyc`.
+4. Preserve the existing source layout under `src/photo_cat/`.
+5. Keep user-facing documentation in both English and Italian when applicable.
+
+## Local checks
+
+Before submitting a pull request, run at least:
+
+```bash
+python -m py_compile src/photo_cat/*.py
+```
+
+On macOS/Linux, also check shell launcher syntax:
+
+```bash
+bash -n START_UNIX.sh scripts/*.sh
+```
+
+If possible, test the full user flow from a clean extracted folder:
+
+- Windows: `START_WINDOWS.bat`
+- macOS/Linux: `sh START_UNIX.sh`
+
+## Documentation changes
+
+When changing user-facing behaviour, update the relevant files in `docs/`.
+
+English and Italian documentation should stay structurally aligned. Do not keep duplicate documentation under `docs/wiki/`; GitHub Wiki content, if used, belongs to the separate wiki repository.
+
+## Licensing
+
+PHOTO-CAT is licensed under GPL-3.0-only.
+
+New source and launcher files should include:
+
+```text
+SPDX-FileCopyrightText: 2026 PHOTO-CAT contributors
+SPDX-License-Identifier: GPL-3.0-only
+```
+
+Files that cannot use visible headers should be covered by `REUSE.toml`.
+Maintainers preparing a release should follow [`docs/PUBLISHING.md`](docs/PUBLISHING.md).

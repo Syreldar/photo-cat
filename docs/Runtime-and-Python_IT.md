@@ -1,29 +1,35 @@
 # Runtime e Python
 
-PHOTO-CAT usa Python localmente senza modificare l’installazione Python dell’utente o del sistema.
+PHOTO-CAT è progettato per mantenere il runtime locale alla cartella del progetto.
 
 ## Versioni Python supportate
 
-Le versioni supportate sono:
+PHOTO-CAT può usare un’installazione Python esistente solo se è supportata e supera i controlli d’ambiente richiesti.
+
+Versioni supportate:
 
 - Python 3.10
 - Python 3.11
 - Python 3.12
 - Python 3.13
 
-Python più vecchi vengono ignorati. Python 3.14 e superiori non sono abilitati di default in questa versione.
+Le versioni più vecchie vengono ignorate. Python 3.14 e superiori non vengono selezionati di default per ora.
 
 ## Runtime locale di fallback
 
-Se non è disponibile un Python supportato, PHOTO-CAT usa un runtime privato nella cartella `.runtime/`.
+Se non è disponibile un Python adatto, PHOTO-CAT usa un runtime privato sotto:
 
-Questo runtime appartiene solo alla cartella del progetto.
+`.runtime/`
+
+Questo evita di modificare l’installazione Python di sistema dell’utente.
 
 ## Ambiente virtuale
 
-PHOTO-CAT installa il pacchetto e le dipendenze nell’ambiente locale `.venv/`.
+Le dipendenze vengono installate solo dentro:
 
-Questo mantiene il progetto isolato dal Python di sistema.
+`.venv/`
+
+PHOTO-CAT non installa pacchetti nell’ambiente Python globale dell’utente.
 
 ## Cosa PHOTO-CAT non fa
 
@@ -32,9 +38,12 @@ PHOTO-CAT non:
 - modifica `PATH` in modo permanente
 - aggiorna il Python dell’utente
 - disinstalla il Python dell’utente
-- installa pacchetti nel Python di sistema
-- richiede all’utente di usare Poetry o uv manualmente
+- installa dipendenze nel Python di sistema
+- sovrascrive un’installazione Python di lavoro esistente
+- richiede agli utenti di eseguire Poetry o uv manualmente
 
 ## Rilevamento ambienti obsoleti
 
-Se `.venv/` è stato creato in un vecchio percorso, punta a un Python rimosso o non è più riutilizzabile, PHOTO-CAT lo ricrea automaticamente.
+Se `.venv/` viene spostato, è rotto o punta a un runtime Python rimosso, PHOTO-CAT lo ricrea automaticamente.
+
+Questo aiuta in casi comuni come lo spostamento della cartella del progetto o la rimozione di un vecchio percorso framework Python da parte di Homebrew su macOS.

@@ -2,7 +2,7 @@
 
 Questa cartella contiene script di supporto usati dai launcher principali nella cartella root.
 
-Gli utenti finali dovrebbero avviare PHOTO-CAT solo con:
+Gli utenti normali dovrebbero avviare solo i file starter nella cartella root:
 
 - `START_WINDOWS.bat`
 - `START_UNIX.sh`
@@ -15,4 +15,13 @@ Gli utenti finali dovrebbero avviare PHOTO-CAT solo con:
 - `run_pipeline_unix.sh`, esegue la pipeline da macOS/Linux dopo `Save + run`.
 - `fix_console_window.ps1`, regola la dimensione della console Windows.
 
-Gli altri script sono helper manuali o di compatibilità per workflow avanzati. La maggior parte degli utenti non ne ha bisogno.
+## Helper di compatibilità
+
+- `install_windows.bat`
+- `configure_windows.bat`
+- `run_windows.bat`
+- `install_linux_macos.sh`
+- `configure_linux_macos.sh`
+- `run_linux_macos.sh`
+
+Sono forniti per workflow avanzati/manuali. La maggior parte degli utenti non ne ha bisogno.

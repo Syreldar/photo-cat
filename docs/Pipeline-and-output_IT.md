@@ -1,28 +1,40 @@
 # Pipeline e output
 
-PHOTO-CAT può eseguire due fasi principali: creazione dell’indice e query di contaminazione.
+PHOTO-CAT ha due fasi principali di pipeline.
 
 ## Fase 1: creazione indice dei vicini
 
-La fase di build legge il catalogo fotometrico e crea un indice dei vicini entro il raggio massimo configurato.
+La fase di build legge il catalogo, valida le colonne configurate, converte le coordinate e crea un indice delle sorgenti vicine.
 
-L’indice viene salvato nella cartella di output configurata e viene riutilizzato dalla fase di query.
+I file indice generati vengono scritti nella cartella indice/output configurata.
 
 ## Fase 2: query contaminazione
 
-La fase di query legge l’indice, seleziona i target e calcola le sorgenti vicine che rispettano i limiti di campo di vista e magnitudine.
+La fase di query carica l’indice e processa i target selezionati.
+
+Per ogni target, PHOTO-CAT identifica le sorgenti vicine dentro il campo di vista configurato e applica i criteri di magnitudine configurati.
 
 ## Output JSON
 
-La fase di query produce un file JSON con una voce per ogni target processato.
+La fase di query scrive un file risultato JSON nella cartella di output configurata.
 
-Ogni voce contiene:
+Ogni risultato target include:
 
-- dati del target
+- source ID del target
+- coordinate del target
+- magnitudine del target, quando disponibile
 - frazione di flusso extra
 - numero di contaminanti
-- lista delle sorgenti contaminanti qualificate
+- lista delle sorgenti contaminanti
+- coordinate, magnitudini e separazioni dei contaminanti
 
 ## Output console
 
-La console mostra fasi, progressi, percorsi dei risultati e riepiloghi finali in formato leggibile.
+La console della pipeline mostra:
+
+- fase corrente della pipeline
+- barre di progresso
+- percorso di salvataggio del risultato
+- riepilogo finale dei target
+
+Il percorso del JSON salvato è evidenziato nella console, così è più facile trovarlo dopo il completamento dell’esecuzione.

@@ -40,6 +40,7 @@ PHOTO-CAT does not:
 - uninstall user Python
 - install dependencies into system Python
 - overwrite an existing work Python installation
+- require users to run Poetry or uv manually
 
 ## Stale environment detection
 

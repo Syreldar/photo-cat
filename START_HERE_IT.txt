@@ -1,23 +1,24 @@
 PHOTO-CAT - Avvio rapido
 
 Windows
-1. Estrarre lo ZIP della release.
-2. Aprire la cartella photo-cat estratta.
-3. Fare doppio click su START_WINDOWS.bat.
+1. Estrai lo ZIP della release.
+2. Apri la cartella photo-cat estratta.
+3. Fai doppio clic su START_WINDOWS.bat.
 
 macOS / Linux
-1. Estrarre lo ZIP della release.
-2. Aprire il Terminale nella cartella photo-cat estratta.
-3. Eseguire:
+1. Estrai lo ZIP della release.
+2. Apri il Terminale nella cartella photo-cat estratta.
+3. Esegui:
    sh START_UNIX.sh
 
 Dopo l'avvio
-1. Selezionare il Catalog CSV.
-2. Verificare che i nomi delle colonne corrispondano esattamente all'header del CSV.
-3. Controllare i percorsi generati per target e output.
-4. Cliccare Save + run.
+1. Seleziona il Catalog CSV.
+2. Verifica che i nomi delle colonne corrispondano esattamente all'header del CSV.
+3. Controlla i percorsi generati per target e output.
+4. Clicca Save + run.
 
 Note
 - I nomi delle colonne sono case-sensitive.
 - Il primo avvio può richiedere alcuni minuti per l'installazione delle dipendenze.
 - Se la cartella del progetto viene spostata, PHOTO-CAT può ricostruire automaticamente l'ambiente locale .venv.
+- Cartelle runtime, log, output e .git non fanno parte di un archivio release pulito.

@@ -8,6 +8,10 @@
   </picture>
 </p>
 
+# PHOTO-CAT
+
+[English](README.md) · [Italiano](README_IT.md)
+
 **Photometric Contamination Analyzer Tool**
 
 PHOTO-CAT builds a neighbour index from an astronomical catalogue and queries nearby sources that may contaminate selected photometric targets.
@@ -61,6 +65,7 @@ See [Download and usage](docs/Download-and-usage.md) for a fuller walkthrough.
 This distribution includes the following main files and folders:
 
 - `README.md`, the file you are currently reading.
+- `README_IT.md`, the Italian README.
 - `START_WINDOWS.bat`, the main Windows launcher.
 - `START_UNIX.sh`, the main macOS/Linux launcher.
 - `config.yaml`, the runtime configuration file managed by the GUI.
@@ -68,6 +73,10 @@ This distribution includes the following main files and folders:
 - `docs/`, user and maintainer documentation.
 - `scripts/`, platform launcher helpers.
 - `src/`, the PHOTO-CAT Python source code.
+- `LICENSE`, the full GPL-3.0 license text.
+- `REUSE.toml`, SPDX/REUSE licensing metadata.
+- `CITATION.cff`, machine-readable citation metadata.
+- `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, and `SECURITY.md`, repository community and maintenance files.
 
 Runtime folders such as `.venv/`, `.runtime/`, logs, and output files are generated locally and should not be committed.
 
@@ -117,7 +126,9 @@ User documentation:
 - [Runtime and Python](docs/Runtime-and-Python.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 
-Wiki-ready pages are available in [docs/wiki/](docs/wiki/Home.md). These files can be copied into a GitHub Wiki if desired.
+Maintainer documentation:
+
+- [Publishing PHOTO-CAT](docs/PUBLISHING.md)
 
 ## Troubleshooting
 
@@ -147,4 +158,4 @@ The authors gratefully acknowledge:
 
 ## License
 
-PHOTO-CAT is distributed under the GPL-3.0 license. See [`LICENSE`](LICENSE) for details.
+PHOTO-CAT is distributed under the GNU General Public License v3.0 only. See [`LICENSE`](LICENSE) for the full license text.

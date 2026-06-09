@@ -21,3 +21,4 @@ Notes
 - Column names are case-sensitive.
 - The first launch may take a few minutes while dependencies are installed.
 - If the project folder is moved, PHOTO-CAT may rebuild its local .venv environment automatically.
+- Runtime folders, logs, outputs, and .git are not part of a clean release archive.

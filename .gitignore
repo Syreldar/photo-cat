@@ -2,15 +2,26 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Virtual environments
+# Virtual environments and local runtime
 .venv/
+.runtime/
 venv/
 env/
 ENV/
 
-# Generated output
+# Build/package artifacts
+build/
+dist/
+*.egg-info/
+
+# Generated output and logs
+logs/
 output/
+data/output/
 *.log
 
 # Local/editor files
@@ -18,8 +29,9 @@ output/
 Thumbs.db
 .vscode/
 .idea/
+.env
 
-# Large generated index files, if produced outside output/
+# Large generated index/intermediate files
 *.npy
 *.npz
 *.bin
@@ -30,5 +42,3 @@ Thumbs.db
 # Keep repository examples tracked
 !data/example_catalog.csv
 !data/example_targets.csv
-
-.runtime/

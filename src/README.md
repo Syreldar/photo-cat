@@ -6,5 +6,6 @@ PHOTO-CAT uses a standard Python `src/` package layout.
 - Package/module names use lowercase `snake_case`.
 - Classes use `PascalCase`.
 - Developer entry points are defined in `pyproject.toml`.
+- End-user launchers remain in the project root.
 
 End users should still start PHOTO-CAT from `START_WINDOWS.bat` or `START_UNIX.sh`.

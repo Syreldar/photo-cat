@@ -8,6 +8,10 @@
   </picture>
 </p>
 
+# PHOTO-CAT
+
+[English](README.md) · [Italiano](README_IT.md)
+
 **Photometric Contamination Analyzer Tool**
 
 PHOTO-CAT crea un indice dei vicini a partire da un catalogo astronomico e interroga le sorgenti vicine che possono contaminare target fotometrici selezionati.
@@ -69,6 +73,10 @@ Questa distribuzione include i principali file e cartelle seguenti:
 - `docs/`, documentazione utente e manutentore.
 - `scripts/`, helper dei launcher per piattaforma.
 - `src/`, codice sorgente Python di PHOTO-CAT.
+- `LICENSE`, testo completo della licenza GPL-3.0.
+- `REUSE.toml`, metadata SPDX/REUSE per licenza e copyright.
+- `CITATION.cff`, metadata di citazione leggibile da GitHub.
+- `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` e `SECURITY.md`, file comunitari e manutentivi del repository.
 
 Cartelle generate a runtime come `.venv/`, `.runtime/`, log e file di output sono locali e non vanno committate.
 
@@ -118,7 +126,9 @@ Documentazione utente:
 - [Runtime e Python](docs/Runtime-and-Python_IT.md)
 - [Risoluzione problemi](docs/Troubleshooting_IT.md)
 
-Le pagine pronte per una GitHub Wiki sono disponibili in [docs/wiki/](docs/wiki/Home_IT.md). Questi file possono essere copiati in una GitHub Wiki se necessario.
+Documentazione manutentori:
+
+- [Pubblicazione PHOTO-CAT](docs/PUBLISHING_IT.md)
 
 ## Risoluzione problemi
 
@@ -148,4 +158,4 @@ Gli autori ringraziano:
 
 ## Licenza
 
-PHOTO-CAT è distribuito con licenza GPL-3.0. Vedi [`LICENSE`](LICENSE) per i dettagli.
+PHOTO-CAT è distribuito solo con licenza GNU General Public License v3.0. Vedi [`LICENSE`](LICENSE) per il testo completo della licenza.

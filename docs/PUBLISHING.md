@@ -40,6 +40,21 @@ Do not commit generated runtime or output files:
 - private datasets
 - credentials or tokens
 
+## Files that should not be included in release ZIPs
+
+Do not include repository or duplicate/generated folders in release archives:
+
+- `.git/`
+- `.venv/`
+- `.runtime/`
+- `logs/`
+- `output/`
+- `data/output/`
+- `__pycache__/`
+- `docs/wiki/`
+
+The canonical documentation lives in `docs/`. GitHub Wiki pages, if used, belong to the separate GitHub Wiki repository.
+
 ## Repository description
 
 Recommended description:
@@ -53,16 +68,17 @@ Recommended topics:
 ## Release checklist
 
 1. Update `VERSION`.
-2. Update `pyproject.toml`.
+2. Update `pyproject.toml` to the same version.
 3. Confirm `LICENSE` contains the full GPL-3.0 license text.
 4. Confirm `pyproject.toml` declares `GPL-3.0-only`.
-5. Update release notes.
-6. Test Windows launch flow.
-7. Test macOS/Linux launch flow where possible.
-8. Test example catalogue and targets.
-9. Confirm `.runtime/`, `.venv/`, logs, and outputs are excluded.
-10. Create a clean release archive.
-11. Publish the GitHub release.
+5. Confirm SPDX headers and `REUSE.toml` are current.
+6. Prepare GitHub release notes.
+7. Test Windows launch flow.
+8. Test macOS/Linux launch flow where possible.
+9. Test example catalogue and targets.
+10. Confirm generated folders, `.git/`, and `docs/wiki/` are excluded from the release archive.
+11. Create a clean release archive.
+12. Publish the GitHub release.
 
 ## Release title format
 

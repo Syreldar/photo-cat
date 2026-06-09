@@ -2,24 +2,28 @@ version = 1
 
 [[annotations]]
 path = [
+    ".github/**",
     ".gitattributes",
     ".gitignore",
+    "CITATION.cff",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
     "VERSION",
     "config.yaml",
     "pyproject.toml",
     "README.md",
     "README_IT.md",
+    "REUSE.toml",
     "START_HERE.txt",
     "START_HERE_IT.txt",
+    "assets/**",
     "data/**",
     "docs/**",
-]
-SPDX-FileCopyrightText = "2026 PHOTO-CAT contributors"
-SPDX-License-Identifier = "GPL-3.0-only"
-
-[[annotations]]
-path = [
-    "assets/**",
+    "scripts/README.md",
+    "scripts/README_IT.md",
+    "src/README.md",
+    "src/README_IT.md"
 ]
 SPDX-FileCopyrightText = "2026 PHOTO-CAT contributors"
 SPDX-License-Identifier = "GPL-3.0-only"

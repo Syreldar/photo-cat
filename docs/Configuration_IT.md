@@ -1,34 +1,42 @@
 # Configurazione
 
-PHOTO-CAT salva la configurazione in `config.yaml`.
+PHOTO-CAT salva la configurazione di esecuzione nel file `config.yaml` nella cartella principale.
+
+Il modo consigliato per modificare questo file è usare la configurazione grafica aperta da `START_WINDOWS.bat` o `START_UNIX.sh`.
 
 ## Sezioni principali
 
-Il file di configurazione contiene sezioni per:
+La configurazione controlla:
 
-- creazione dell’indice dei vicini
-- query di contaminazione
-- controllo delle fasi da eseguire
-- percorsi di input e output
+- percorso del catalogo di input
+- percorso del file target o target manuali
+- mapping delle colonne del catalogo
+- cartella di output
+- percorsi dell’indice dei vicini
+- opzioni della fase di build
+- opzioni della fase di query
+- modalità di esecuzione
 
 ## Gestione percorsi del catalogo
 
-I percorsi possono essere assoluti o relativi alla cartella del progetto.
+Quando viene selezionato un CSV catalogo nella GUI, PHOTO-CAT può inizializzare percorsi collegati come file target, cartella output/indice e cartella indice per la query.
 
-La GUI prova a mantenere i percorsi leggibili e portabili quando possibile.
+I valori restano modificabili prima dell’esecuzione.
 
 ## Fase di build
 
-La fase di build legge il catalogo, valida le colonne richieste e crea un indice dei vicini.
+La fase di build crea un indice dei vicini dal catalogo.
 
-Le impostazioni principali includono raggio massimo, dimensione chunk, uso di Dask e salvataggio opzionale delle separazioni.
+Usala quando cambiano catalogo, colonne coordinate, raggio di ricerca o cartella output/indice.
 
 ## Fase di query
 
-La fase di query analizza target selezionati usando l’indice creato.
+La fase di query legge un indice esistente e processa i target selezionati.
 
-Le impostazioni principali includono campo di vista, limite di magnitudine e origine dei target.
+Usala quando l’indice esiste già e devi solo interrogare target o modificare opzioni di query.
 
 ## Save + run
 
-Il pulsante `Save + run` salva `config.yaml` e avvia la pipeline con la configurazione corrente.
+`Save + run` scrive le impostazioni correnti della GUI in `config.yaml`, poi avvia la pipeline in una console separata.
+
+La console della pipeline mostra il progresso e il percorso finale dell’output.

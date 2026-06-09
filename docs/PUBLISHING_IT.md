@@ -40,6 +40,21 @@ Non committare runtime generati o file di output:
 - dataset privati
 - credenziali o token
 
+## File da non includere negli ZIP release
+
+Non includere cartelle repository, duplicate o generate negli archivi release:
+
+- `.git/`
+- `.venv/`
+- `.runtime/`
+- `logs/`
+- `output/`
+- `data/output/`
+- `__pycache__/`
+- `docs/wiki/`
+
+La documentazione canonica vive in `docs/`. Le pagine GitHub Wiki, se usate, appartengono al repository Wiki separato di GitHub.
+
 ## Descrizione repository
 
 Descrizione consigliata:
@@ -53,16 +68,17 @@ Topic consigliati:
 ## Checklist release
 
 1. Aggiorna `VERSION`.
-2. Aggiorna `pyproject.toml`.
+2. Aggiorna `pyproject.toml` alla stessa versione.
 3. Conferma che `LICENSE` contenga il testo completo della licenza GPL-3.0.
 4. Conferma che `pyproject.toml` dichiari `GPL-3.0-only`.
-5. Aggiorna le note di rilascio.
-6. Testa il flusso launcher su Windows.
-7. Testa il flusso launcher su macOS/Linux dove possibile.
-8. Testa catalogo e target di esempio.
-9. Conferma che `.runtime/`, `.venv/`, log e output siano esclusi.
-10. Crea un archivio release pulito.
-11. Pubblica la release GitHub.
+5. Conferma che header SPDX e `REUSE.toml` siano aggiornati.
+6. Prepara le note di rilascio GitHub.
+7. Testa il flusso launcher su Windows.
+8. Testa il flusso launcher su macOS/Linux dove possibile.
+9. Testa catalogo e target di esempio.
+10. Conferma che cartelle generate, `.git/` e `docs/wiki/` siano escluse dall’archivio release.
+11. Crea un archivio release pulito.
+12. Pubblica la release GitHub.
 
 ## Formato titolo release
 

@@ -2,38 +2,46 @@
 
 ## La GUI non si apre
 
-Su macOS/Linux, il problema può essere legato a Tkinter.
+La configurazione grafica richiede Tkinter.
 
-Il launcher prova a verificare Tkinter prima di aprire la GUI e mostra un messaggio più chiaro se manca il supporto grafico.
+PHOTO-CAT controlla Tkinter prima di aprire la GUI e prova a gestire i casi comuni su macOS/Linux. Se il controllo fallisce, installa Tkinter per la versione Python usata oppure lascia che PHOTO-CAT usi il runtime locale di fallback.
 
 ## `.venv` è rotto dopo aver spostato la cartella
 
-PHOTO-CAT rileva quando `.venv/` punta ancora al vecchio percorso del progetto.
+PHOTO-CAT rileva ambienti virtuali spostati o rotti e ricrea automaticamente `.venv/`.
 
-In questo caso, l’ambiente locale viene ricreato automaticamente.
+Se necessario, chiudi PHOTO-CAT, elimina `.venv/` e avvia di nuovo il launcher.
 
 ## Un percorso Homebrew Python non esiste più
 
-Su macOS, Homebrew può rimuovere vecchie build di Python.
+Homebrew può rimuovere vecchi percorsi framework Python durante gli aggiornamenti.
 
-Se `.venv/` punta a un framework Python non più presente, PHOTO-CAT rileva il problema e ricrea l’ambiente locale.
+PHOTO-CAT controlla se `.venv/bin/python` può avviarsi. Se non può, l’ambiente viene ricreato prima di continuare con l’installazione delle dipendenze.
 
 ## Le dipendenze non si installano
 
-Controlla la connessione internet e il log indicato nella console.
+Controlla il messaggio in console e `logs/install.log`.
 
-Le dipendenze vengono installate solo in `.venv/`.
+Cause comuni includono:
+
+- nessuna connessione internet durante il primo setup
+- accesso di rete bloccato
+- versione Python non supportata
+- installazione Python incompleta
+- problemi di permessi nella cartella del progetto
 
 ## Errori nei nomi delle colonne
 
 I nomi delle colonne sono case-sensitive.
 
-Controlla che i nomi configurati nella GUI corrispondano esattamente all’header del CSV.
+Apri il CSV catalogo o target e conferma che i nomi delle colonne configurati corrispondano esattamente agli header.
 
 ## Errori nella cartella indice
 
-Se la fase query non trova l’indice, esegui prima la fase di build oppure controlla il percorso dell’indice in `config.yaml`.
+La fase di query richiede una cartella indice completa dalla fase di build.
+
+Esegui di nuovo la fase di build se mancano file, il catalogo è cambiato o la cartella indice è stata spostata.
 
 ## Problemi con il percorso di output
 
-Assicurati che la cartella di output sia scrivibile e che il percorso non punti a una posizione protetta o inesistente.
+Assicurati che la cartella di output configurata sia scrivibile e non sia dentro una cartella di sistema protetta.

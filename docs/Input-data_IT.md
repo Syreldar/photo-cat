@@ -1,39 +1,47 @@
 # Dati di input
 
-PHOTO-CAT usa file CSV per il catalogo e, opzionalmente, per i target.
+PHOTO-CAT lavora con file CSV in input.
 
 ## Catalogo CSV
 
-Il catalogo deve contenere colonne per:
+Il CSV catalogo è la tabella sorgente principale usata per creare l’indice dei vicini.
 
-- source ID
-- ascensione retta
-- declinazione
-- magnitudine fotometrica
-
-I nomi predefiniti in stile Gaia sono:
+Le colonne attese di default sono:
 
 - `source_id`
 - `ra`
 - `dec`
 - `phot_g_mean_mag`
 
+`ra` e `dec` devono essere coordinate numeriche. `phot_g_mean_mag` deve essere numerica se viene usato il filtro di magnitudine.
+
 ## CSV target
 
-Un CSV target può essere usato per indicare le sorgenti da analizzare.
+Il CSV target identifica le sorgenti da interrogare usando l’indice dei vicini creato.
 
-Il file deve contenere una colonna source ID che corrisponda agli ID presenti nel catalogo o nell’indice creato.
+La colonna identificatore target predefinita è:
+
+- `source_id`
+
+I valori target devono corrispondere agli ID del catalogo.
 
 ## Target manuali
 
-In alternativa, i target possono essere inseriti manualmente nella configurazione come lista di source ID.
+PHOTO-CAT può anche usare una lista manuale di source ID target invece di un CSV target.
+
+È utile per controlli rapidi o piccole liste di target.
 
 ## Nomi colonne
 
-I nomi delle colonne sono case-sensitive e devono corrispondere esattamente all’header del CSV.
+I nomi delle colonne sono case-sensitive. Devono corrispondere esattamente all’header del CSV.
 
-Se i tuoi file usano nomi diversi, cambiali nella configurazione grafica prima di eseguire la pipeline.
+Se il tuo catalogo usa nomi diversi, configurali nella configurazione grafica prima di eseguire la pipeline.
 
 ## File di esempio
 
-La cartella `data/` contiene piccoli file CSV di esempio per verificare rapidamente che il progetto funzioni.
+La cartella `data/` include piccoli file di esempio:
+
+- `example_catalog.csv`
+- `example_targets.csv`
+
+Servono solo a testare il workflow. Sostituiscili con cataloghi e target reali per l’analisi.
