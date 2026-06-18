@@ -12,6 +12,14 @@ from typing import Any
 
 import yaml
 
+from .path_policy import (
+    require_existing_file,
+    resolve_config_file_path,
+    resolve_user_path,
+    validate_directory_target,
+    validate_filename_only,
+)
+
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 ROOT_CONFIG_PATH = PROJECT_DIR / "config.yaml"
@@ -55,17 +63,13 @@ class ExecutionConfig:
 
 
 def resolve_config_path(config_path: str | None = None) -> Path:
-    """Resolve an explicit config path, ``PHOTO_CAT_CONFIG``, or the project default."""
-    if (config_path is None):
-        path_text = os.environ.get("PHOTO_CAT_CONFIG", "").strip() or str(ROOT_CONFIG_PATH)
-    else:
-        path_text = str(config_path).strip()
-
-    path = Path(os.path.expanduser(path_text))
-    if (not path.is_absolute()):
-        path = PROJECT_DIR / path
-
-    return path.resolve()
+    """Resolve explicit, environment, and project-default config locations."""
+    return resolve_config_file_path(
+        config_path,
+        base_dir=PROJECT_DIR,
+        default_path=ROOT_CONFIG_PATH,
+        environment_path=os.environ.get("PHOTO_CAT_CONFIG"),
+    )
 
 
 def read_config_file(config_path: Path) -> dict[str, Any]:
@@ -179,58 +183,24 @@ def parse_positive_int(value: Any, label: str, default: int) -> int:
 
 def resolve_path(path_value: str | None, config_dir: Path) -> str | None:
     """Resolve a user path relative to the directory containing ``config.yaml``."""
-    if (path_value is None):
-        return None
-
-    path_text = str(path_value).strip()
-    if (path_text == ""):
-        return None
-
-    path = Path(os.path.expanduser(path_text))
-    if (not path.is_absolute()):
-        path = config_dir / path
-
-    return str(path.resolve())
+    resolved_path = resolve_user_path(path_value, config_dir)
+    return (None if (resolved_path is None) else str(resolved_path))
 
 
 def require_file(path_value: str | None, label: str) -> str | None:
     """Return an existing file path or raise a direct user-facing error."""
-    if (path_value is None):
-        return None
-
-    if (not Path(path_value).is_file()):
-        raise FileNotFoundError(
-            f"{label} was not found: {path_value}\n"
-            "Check config.yaml and use / in paths, even on Windows."
-        )
-
-    return path_value
+    required_path = require_existing_file((None if (path_value is None) else Path(path_value)), label)
+    return (None if (required_path is None) else str(required_path))
 
 
 def validate_output_directory(path_value: str, label: str) -> str:
     """Reject output paths that already point to a regular file."""
-    output_path = Path(path_value)
-
-    if (output_path.exists() and not output_path.is_dir()):
-        raise ValueError(
-            f"{label} must be a directory, but it points to an existing file:\n{output_path}\n\n"
-            "Choose a new output folder or remove/rename the conflicting file."
-        )
-
-    return str(output_path)
+    return str(validate_directory_target(Path(path_value), label))
 
 
 def validate_output_filename(value: str, label: str) -> str:
     """Require an output filename rather than a path outside the configured output folder."""
-    filename = require_text(value, label)
-
-    if (filename in {".", ".."} or "/" in filename or "\\" in filename):
-        raise ValueError(
-            f"{label} must be a filename only, not a path: {filename}\n"
-            "Use --out-dir/config out_dir to choose the folder."
-        )
-
-    return filename
+    return validate_filename_only(value, label)
 
 
 def column_name(columns: dict[str, Any], legacy_usecolumns: list[Any], key: str, index: int, default: str) -> str:

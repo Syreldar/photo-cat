@@ -95,7 +95,6 @@ Output
 import csv
 import os
 import json
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -107,6 +106,13 @@ from .contaminant import Contaminant
 from .logger_setup import get_logger
 from .load_config import load_config
 from .pipeline_display import ActivityBar, progress_bar
+from .path_policy import (
+    IndexPaths,
+    ensure_query_output_directory,
+    index_paths,
+    query_output_json_path,
+    validate_index_paths,
+)
 
 
 logger = get_logger(__name__)
@@ -158,93 +164,31 @@ def validate_target_column(csv_path: str, target_source_id_column: str) -> None:
 
 
 
-def validate_index_directory(index_dir: str) -> None:
-    index_path = Path(index_dir)
-
-    if (not index_path.exists()):
-        raise FileNotFoundError(
-            "Query index folder was not found.\n\n"
-            f"Selected index folder:\n{index_path}\n\n"
-            "Run the build step first, or select the correct Output/index folder."
-        )
-
-    if (not index_path.is_dir()):
-        raise ValueError(
-            "Query index folder must be a directory, but it points to a file.\n\n"
-            f"Selected path:\n{index_path}"
-        )
-
-    required_files = [
-        "offsets.npy",
-        "neighbors_ids.bin",
-        "ra.npy",
-        "dec.npy",
-        "phot_g_mean_mag.npy",
-        "real_ids_int.npy",
-        "special_ids.npz",
-    ]
-    missing_files = [name for name in required_files if (not (index_path / name).is_file())]
-
-    if (missing_files):
-        raise FileNotFoundError(
-            "Query index folder is not ready.\n\n"
-            f"Selected index folder:\n{index_path}\n\n"
-            "Missing required index files:\n"
-            + "\n".join(f"- {name}" for name in missing_files)
-            + "\n\nRun the build step first, or select the correct Output/index folder."
-        )
+def validate_index_directory(index_dir: str) -> IndexPaths:
+    """Validate an index directory and return its named runtime paths."""
+    return validate_index_paths(index_paths(index_dir))
 
 
 def ensure_result_output_directory(index_dir: str) -> Path:
     """Create the query-result folder or report a direct path conflict."""
-    output_dir = Path(index_dir) / "output"
-
-    if (output_dir.exists() and not output_dir.is_dir()):
-        raise ValueError(
-            "Query results output path must be a directory, but it points to a file.\n\n"
-            f"Conflicting path:\n{output_dir}\n\n"
-            "Remove/rename the file or select a different index folder."
-        )
-
-    try:
-        output_dir.mkdir(parents=True, exist_ok=True)
-    except OSError as error:
-        raise OSError(
-            f"Could not create the query results output folder: {output_dir}"
-        ) from error
-
-    return output_dir
+    return ensure_query_output_directory(index_paths(index_dir))
 
 
-# --- Helper: create output JSON path ------------------------------------------
 def create_output_json_path(
     TARGETS_INPUT: Optional[str],
     INDEX_DIR: str,
     field_of_view_arcsec: float,
-    delta_mag: float
-    ) -> str:
-    """
-    Build a timestamped JSON output path under INDEX_DIR/output.
-
-    The file name encodes:
-        - input target file name (or "manual_targets")
-        - FoV radius
-        - delta_mag threshold
-        - timestamp (YYYYMMDD_HHMM)
-
-    The directory INDEX_DIR/output is created if it does not exist.
-    """
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-
-    if TARGETS_INPUT:
-        base_name = os.path.splitext(os.path.basename(TARGETS_INPUT))[0]
-    else:
-        base_name = "manual_targets"
-
-    output_dir = ensure_result_output_directory(INDEX_DIR)
-
-    filename = f"{base_name}_FoV{int(field_of_view_arcsec)}_dmag{int(delta_mag)}_{timestamp}.json"
-    return str(output_dir / filename)
+    delta_mag: float,
+) -> str:
+    """Build a timestamped JSON result path under the controlled index output directory."""
+    return str(
+        query_output_json_path(
+            index_paths(INDEX_DIR),
+            TARGETS_INPUT,
+            field_of_view_arcsec,
+            delta_mag,
+        )
+    )
 
 
 def find_numeric_internal_id(
@@ -304,7 +248,7 @@ def target_id_preview(values: list[str]) -> str:
 
 # --- Load catalog and targets (low-memory path) --------------------------------
 def load_catalog_arrays(
-    INDEX_DIR: str,
+    INDEX_DIR: str | IndexPaths,
     TARGETS_INPUT: Optional[str] = None,
     targets: Optional[list] = None,
     target_source_id_column: str = "source_id"
@@ -320,8 +264,8 @@ def load_catalog_arrays(
 
     Parameters
     ----------
-    INDEX_DIR : str
-        Directory with ra.npy, dec.npy, phot_g_mean_mag.npy,
+    INDEX_DIR : str or IndexPaths
+        Index root or resolved runtime paths with ra.npy, dec.npy, phot_g_mean_mag.npy,
         real_ids_int.npy and special_ids.npz.
 
     TARGETS_INPUT : str or None
@@ -351,12 +295,15 @@ def load_catalog_arrays(
         List of internal_ids corresponding to the requested target source_ids.
         Any targets that cannot be matched are skipped (with a warning).
     """
+    # Path resolution happens before numerical execution so this function only opens named files.
+    paths = INDEX_DIR if isinstance(INDEX_DIR, IndexPaths) else index_paths(INDEX_DIR)
+
     # Numeric columns as memmap (do not load fully into RAM).
-    ra = np.load(os.path.join(INDEX_DIR, "ra.npy"), mmap_mode="r")
-    dec = np.load(os.path.join(INDEX_DIR, "dec.npy"), mmap_mode="r")
+    ra = np.load(paths.ra, mmap_mode="r")
+    dec = np.load(paths.dec, mmap_mode="r")
 
     gmag = None
-    gmag_path = os.path.join(INDEX_DIR, "phot_g_mean_mag.npy")
+    gmag_path = paths.phot_g_mean_mag
     if os.path.exists(gmag_path):
         gmag = np.load(gmag_path, mmap_mode="r")
 
@@ -364,11 +311,11 @@ def load_catalog_arrays(
     logger.info(f"Loaded coordinates arrays for {n_sources:,} sources from index.")
 
     # Numeric real IDs: one per row, -1 where IDs are non-numeric.
-    real_ids_int_path = os.path.join(INDEX_DIR, "real_ids_int.npy")
+    real_ids_int_path = paths.real_ids_int
     real_ids_int = np.load(real_ids_int_path, mmap_mode="r")
 
     # Special IDs: few rows with non-numeric names (e.g. "HD 216608A").
-    special_ids_path = os.path.join(INDEX_DIR, "special_ids.npz")
+    special_ids_path = paths.special_ids
     special = np.load(special_ids_path, allow_pickle=True)
     special_internal_ids = special["internal_ids"].astype(np.int64)
     special_names = special["names"].astype(str)
@@ -725,22 +672,24 @@ def main() -> int:
     # ---------------- CONFIG IMPORT ----------------
     config_query = load_config("query_contamination_from_index")
 
-    validate_index_directory(config_query.INDEX_DIR)
+    paths = validate_index_directory(config_query.INDEX_DIR)
 
     # ---------------- OUTPUT PATH (JSON ONLY) ------
-    OUTPUT_JSON = create_output_json_path(
-        config_query.TARGETS_INPUT,
-        config_query.INDEX_DIR,
-        config_query.field_of_view_arcsec,
-        config_query.delta_mag
+    OUTPUT_JSON = str(
+        query_output_json_path(
+            paths,
+            config_query.TARGETS_INPUT,
+            config_query.field_of_view_arcsec,
+            config_query.delta_mag,
+        )
     )
 
     # ---------------- LOAD INDEX DATA --------------
     logger.info("Loading index data...")
 
     with ActivityBar("[loading index arrays]"):
-        offsets = np.load(os.path.join(config_query.INDEX_DIR, "offsets.npy"))
-    neighbors_path = os.path.join(config_query.INDEX_DIR, "neighbors_ids.bin")
+        offsets = np.load(paths.offsets)
+    neighbors_path = paths.neighbors_ids
 
     total_neighbors = int(offsets[-1])
     logger.info(f"Total neighbor entries: {total_neighbors:,}")
@@ -756,7 +705,7 @@ def main() -> int:
 
     # ---------------- LOAD CATALOG ARRAYS ----------
     ra, dec, gmag, real_ids_int, internal_to_special_name, targets_internal = load_catalog_arrays(
-        config_query.INDEX_DIR,
+        paths,
         config_query.TARGETS_INPUT,
         config_query.targets,
         config_query.target_source_id_column

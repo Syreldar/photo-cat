@@ -13,6 +13,8 @@ from typing import Any
 
 import yaml
 
+from .path_policy import resolve_user_path
+
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "build_neighbors_index": {
@@ -129,18 +131,8 @@ def set_nested_value(config: dict[str, Any], keys: tuple[str, ...], value: Any) 
 
 def resolve_cli_path(value: str | None) -> str | None:
     """Resolve CLI path override values relative to the current working directory."""
-    if (value is None):
-        return None
-
-    path_text = str(value).strip()
-    if (path_text == ""):
-        return None
-
-    path = Path(os.path.expanduser(path_text))
-    if (not path.is_absolute()):
-        path = Path.cwd() / path
-
-    return str(path.resolve())
+    resolved_path = resolve_user_path(value, Path.cwd())
+    return (None if (resolved_path is None) else str(resolved_path))
 
 
 def parse_csv_list(value: str | None) -> list[str]:
