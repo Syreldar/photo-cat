@@ -36,6 +36,13 @@ execution
 
 Documented keys inside these sections, relative-path behaviour, and validation rules are part of the supported configuration model. Additive settings are preferred over renaming or silently reinterpreting existing settings.
 
+### Path-resolution rules
+
+- Relative paths stored in `config.yaml`, including catalogue, targets, build-output, and query-index paths, resolve relative to the directory containing that config file.
+- An explicit CLI `--config` path and direct CLI path overrides resolve relative to the working directory where `photo-cat` is invoked.
+- Query result files are created only under `INDEX_DIR/output`; a file occupying that path is a validation error.
+- Index directory validation happens before numerical query execution opens index arrays or memory maps.
+
 ## Build-index outputs
 
 A successful build writes the documented neighbour-index files inside the configured output directory. Query mode relies on that directory layout, so changes require a migration plan, compatibility handling, or a documented major-version break.

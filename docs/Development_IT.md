@@ -74,7 +74,7 @@ Leggi [Contratti pubblici](Public-Contracts_IT.md) prima di modificare un comand
 - Ogni test marcato deve avere un docstring conciso quando il suo intento tecnico, scientifico, numerico o di compatibilità non è evidente dal nome.
 - Mantieni i test centrati sul comportamento osservabile. Non legare i test di regressione alla struttura di helper privati che un refactoring può sostituire intenzionalmente.
 
-I dati di test condivisi e gli helper per configurazioni temporanee appartengono a `tests/conftest.py`.
+I dati di test condivisi e gli helper per configurazioni temporanee appartengono a `tests/conftest.py`. Le regole dei percorsi runtime sono coperte da `tests/test_path_policy.py`; preserva la distinzione tra percorsi relativi al file config e percorsi CLI relativi alla directory di lavoro.
 
 ## Verificare una modifica prima di aprire una pull request
 

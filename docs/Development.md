@@ -74,7 +74,7 @@ Read [Public contracts](Public-Contracts.md) before changing a command, configur
 - Every marked test needs a concise docstring when its technical, scientific, numerical, or compatibility intent is not obvious from the name.
 - Keep tests focused on observable behaviour. Do not bind regression tests to private helper structure that a refactor may deliberately replace.
 
-Shared test data and temporary-config helpers belong in `tests/conftest.py`.
+Shared test data and temporary-config helpers belong in `tests/conftest.py`. Runtime path rules are covered by `tests/test_path_policy.py`; preserve the distinction between config-relative and CLI-working-directory-relative paths.
 
 ## Verifying a change before opening a pull request
 

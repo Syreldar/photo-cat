@@ -43,7 +43,6 @@ photo-cat run --config configs/run.yaml --input-catalog data/catalog.csv
 
 `data/catalog.csv` is resolved from the folder where the command is executed.
 
-
 ## Input and output errors
 
 CLI commands return a non-zero status and print an `ERROR:` message to standard error when a configuration file, catalogue, targets CSV, index folder, or output path is invalid.

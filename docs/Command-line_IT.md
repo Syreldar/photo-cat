@@ -43,7 +43,6 @@ photo-cat run --config configs/run.yaml --input-catalog data/catalog.csv
 
 `data/catalog.csv` viene risolto a partire dalla cartella corrente del terminale.
 
-
 ## Errori di input e output
 
 I comandi CLI restituiscono uno stato diverso da zero e stampano un messaggio `ERROR:` su standard error quando un file di configurazione, catalogo, CSV dei target, cartella indice o percorso di output non è valido.

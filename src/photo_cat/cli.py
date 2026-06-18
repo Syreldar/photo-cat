@@ -12,6 +12,7 @@ from importlib import import_module
 from pathlib import Path
 
 from .cli_overrides import RuntimeConfigOverride, collect_overrides
+from .path_policy import resolve_user_path
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
@@ -28,15 +29,9 @@ class OverrideHelpFormatter(argparse.HelpFormatter):
 def resolve_cli_config(config_path: str | None) -> Path | None:
     """Resolve a CLI config path relative to the current working directory."""
     if (config_path is None):
-        if (DEFAULT_CONFIG_PATH.is_file()):
-            return DEFAULT_CONFIG_PATH.resolve()
-        return None
+        return DEFAULT_CONFIG_PATH.resolve() if (DEFAULT_CONFIG_PATH.is_file()) else None
 
-    path = Path(os.path.expanduser(config_path))
-    if (not path.is_absolute()):
-        path = Path.cwd() / path
-
-    return path.resolve()
+    return resolve_user_path(config_path, Path.cwd())
 
 
 def invoke_module_main(module_name: str) -> int:
@@ -67,8 +62,6 @@ def run_build_index(args: argparse.Namespace) -> int:
 def run_query(args: argparse.Namespace) -> int:
     """Query contamination using the configured or overridden inputs."""
     return run_module_with_runtime_config(args, "query_contamination_from_index")
-
-    return int(with_runtime_config(args, callback) or 0)
 
 
 def run_configure(args: argparse.Namespace) -> int:

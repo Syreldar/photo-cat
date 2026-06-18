@@ -36,6 +36,13 @@ execution
 
 Le chiavi documentate in queste sezioni, il comportamento dei percorsi relativi e le regole di validazione fanno parte del modello di configurazione supportato. È preferibile aggiungere impostazioni piuttosto che rinominare o reinterpretare silenziosamente quelle esistenti.
 
+### Regole di risoluzione dei percorsi
+
+- I percorsi relativi memorizzati in `config.yaml`, inclusi catalogo, target, output build e indice query, sono risolti rispetto alla directory che contiene quel file config.
+- Un percorso CLI esplicito `--config` e gli override diretti dei percorsi CLI sono risolti rispetto alla directory di lavoro da cui viene invocato `photo-cat`.
+- I file di risultato della query vengono creati solo sotto `INDEX_DIR/output`; un file che occupa quel percorso è un errore di validazione.
+- La validazione della directory dell’indice avviene prima che l’esecuzione numerica della query apra array dell’indice o memory map.
+
 ## Output della build dell'indice
 
 Una build completata scrive i file dell'indice dei vicini documentati nella directory di output configurata. La modalità query dipende da questo layout, quindi le modifiche richiedono un piano di migrazione, compatibilità o una rottura documentata di major version.
