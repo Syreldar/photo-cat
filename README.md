@@ -33,6 +33,8 @@ It can build a neighbour index from a source catalogue, query selected targets, 
 
 PHOTO-CAT is designed for reproducible local use. It includes beginner-friendly launchers, a graphical configuration window, automatic dependency setup, and project-local runtime handling so user/system Python installations are not modified.
 
+> **Version 2 migration:** neighbour indexes created by PHOTO-CAT 1.x must be rebuilt. Version 2 uses a versioned, non-executable index format and intentionally refuses legacy pickle/object-array files.
+
 ## Download and get started
 
 1. Download the latest release archive.

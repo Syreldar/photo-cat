@@ -76,7 +76,7 @@ def test_query_output_path_stays_inside_the_index_output_directory(write_minimal
     )
 
     assert result_path.parent == root / "output"
-    assert result_path.name == "targets_FoV47_dmag5_20260618_1234.json"
+    assert result_path.name == "targets_FoV47_dmag5_20260618_123456_000000.json"
 
 
 @pytest.mark.unit

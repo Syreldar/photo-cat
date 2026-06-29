@@ -39,7 +39,7 @@ def test_calculate_flux_fraction_extra_uses_pogson_flux_ratio() -> None:
     result = calculate_flux_fraction_extra(
         target_magnitude=10.0,
         contaminant_magnitudes=np.array([11.0, 15.0]),
-        inside_field_of_view=np.array([True, False]),
+        selected_contaminants=np.array([True, False]),
     )
 
     assert result == pytest.approx((10.0 ** -0.4) * 100.0)

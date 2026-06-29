@@ -48,7 +48,7 @@ Documented keys inside these sections, relative-path behaviour, and validation r
 
 ## Build-index outputs
 
-A successful build writes the documented neighbour-index files inside the configured output directory. Query mode relies on that directory layout, so changes require a migration plan, compatibility handling, or a documented major-version break.
+A successful build writes the documented neighbour-index files inside the configured output directory. Format version 2 requires a completed `index_manifest.json` and safe non-object NumPy arrays. Version 1 indexes require an explicit rebuild and are never deserialized.
 
 ## Query results
 

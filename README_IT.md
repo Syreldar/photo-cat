@@ -33,6 +33,8 @@ Può creare un indice dei vicini da un catalogo di sorgenti, interrogare target 
 
 PHOTO-CAT è pensato per un utilizzo locale e riproducibile. Include launcher semplici, una finestra grafica di configurazione, setup automatico delle dipendenze e gestione del runtime locale al progetto, così le installazioni Python dell’utente o del sistema non vengono modificate.
 
+> **Migrazione alla versione 2:** gli indici creati da PHOTO-CAT 1.x devono essere ricostruiti. La versione 2 usa un formato versionato e non eseguibile e rifiuta intenzionalmente i precedenti file pickle/object-array.
+
 ## Download e primo avvio
 
 1. Scarica l’archivio dell’ultima release.

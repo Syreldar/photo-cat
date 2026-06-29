@@ -48,7 +48,7 @@ Le chiavi documentate in queste sezioni, il comportamento dei percorsi relativi 
 
 ## Output della build dell'indice
 
-Una build completata scrive i file dell'indice dei vicini documentati nella directory di output configurata. La modalità query dipende da questo layout, quindi le modifiche richiedono un piano di migrazione, compatibilità o una rottura documentata di major version.
+Una build completata scrive i file documentati dell'indice dei vicini nella directory di output configurata. Il formato versione 2 richiede un `index_manifest.json` completo e array NumPy sicuri senza oggetti. Gli indici versione 1 devono essere ricostruiti e non vengono mai deserializzati.
 
 ## Risultati della query
 

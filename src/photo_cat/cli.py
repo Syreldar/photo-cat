@@ -110,7 +110,6 @@ def add_build_overrides(parser: argparse.ArgumentParser) -> None:
     build_group = parser.add_argument_group("build/index overrides")
     build_group.add_argument("--input-catalog", help="catalogue CSV path")
     build_group.add_argument("--out-dir", help="output/index directory for the build step")
-    build_group.add_argument("--kdtree-filename", help="KDTree filename inside the output/index directory")
     build_group.add_argument("--usecolumns", "--use-columns", dest="usecolumns", help="legacy comma-separated column list: source_id,ra,dec,mag")
     build_group.add_argument("--catalog-source-id-column", help="catalogue source_id column name")
     build_group.add_argument("--ra-column", help="catalogue right-ascension column name")

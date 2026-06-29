@@ -93,7 +93,7 @@ photo-cat build-index --config missing.yaml
 photo-cat build-index --config config.yaml --input-catalog data/missing_catalog.csv
 ```
 
-`out_dir` deve essere una cartella e non può coincidere con un file esistente. `KDTREE_FILENAME` deve essere solo un nome file; usa `--out-dir` per scegliere la cartella di output.
+`out_dir` deve essere una cartella e non può coincidere con un file esistente.
 
 Per `photo-cat query`, la cartella indice deve contenere i file dell'indice completato. Il risultato viene creato in `INDEX_DIR/output`; un file chiamato `output` viene segnalato come errore e non viene sovrascritto.
 
@@ -243,7 +243,6 @@ Le opzioni booleane supportano forma positiva e negativa:
 |---|---|
 | `build_neighbors_index.io.input_catalog` | `--input-catalog PATH` |
 | `build_neighbors_index.io.out_dir` | `--out-dir PATH` |
-| `build_neighbors_index.io.KDTREE_FILENAME` | `--kdtree-filename NAME` |
 | `build_neighbors_index.io.usecolumns` | `--usecolumns source_id,ra,dec,mag` |
 | `build_neighbors_index.io.columns.source_id` | `--catalog-source-id-column NAME` |
 | `build_neighbors_index.io.columns.ra` | `--ra-column NAME` |

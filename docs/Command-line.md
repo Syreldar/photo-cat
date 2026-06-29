@@ -93,7 +93,7 @@ photo-cat build-index --config missing.yaml
 photo-cat build-index --config config.yaml --input-catalog data/missing_catalog.csv
 ```
 
-`out_dir` must be a directory. It cannot reuse the path of an existing file. `KDTREE_FILENAME` must be a filename only; set `--out-dir` to choose the output folder.
+`out_dir` must be a directory. It cannot reuse the path of an existing file.
 
 For `photo-cat query`, the selected index folder must contain the completed index files. The query result path is created under `INDEX_DIR/output`; a file named `output` in that folder is treated as an error rather than being overwritten.
 
@@ -243,7 +243,6 @@ Boolean options support positive and negative forms:
 |---|---|
 | `build_neighbors_index.io.input_catalog` | `--input-catalog PATH` |
 | `build_neighbors_index.io.out_dir` | `--out-dir PATH` |
-| `build_neighbors_index.io.KDTREE_FILENAME` | `--kdtree-filename NAME` |
 | `build_neighbors_index.io.usecolumns` | `--usecolumns source_id,ra,dec,mag` |
 | `build_neighbors_index.io.columns.source_id` | `--catalog-source-id-column NAME` |
 | `build_neighbors_index.io.columns.ra` | `--ra-column NAME` |

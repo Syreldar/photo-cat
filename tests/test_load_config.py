@@ -63,8 +63,10 @@ def test_load_config_rejects_unknown_section(write_config: Callable[[], Path]) -
     [
         ("use_dask: definitely", "use_dask must be true or false"),
         ("max_radius_arcsec: 0", "max_radius_arcsec must be greater than 0.0"),
+        ("max_radius_arcsec: 648001", "max_radius_arcsec must be at most 648000.0"),
         ("chunk_size: 0", "chunk_size must be a positive integer"),
         ("field_of_view_arcsec: 0", "field_of_view_arcsec must be greater than 0.0"),
+        ("field_of_view_arcsec: 648001", "field_of_view_arcsec must be at most 648000.0"),
     ],
 )
 @pytest.mark.unit

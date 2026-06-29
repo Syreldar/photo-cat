@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "photo-cat"
-version = "1.7.0"
+version = "2.0.0"
 description = "A GUI-assisted photometric contamination analysis tool."
 authors = ["Gabriele Galletta <gabriele.galletta@inaf.it>", "PHOTO-CAT contributors"]
 readme = "README.md"

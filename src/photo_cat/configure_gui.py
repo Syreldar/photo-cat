@@ -11,6 +11,7 @@ library. Runtime dependencies are installed from pyproject.toml into the local .
 import csv
 import os
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -35,7 +36,6 @@ DEFAULT_CONFIG = {
         "io": {
             "input_catalog": "data/example_catalog.csv",
             "out_dir": "data/output",
-            "KDTREE_FILENAME": "ckdtree.pkl",
             "usecolumns": [
                 "source_id",
                 "ra",
@@ -1178,7 +1178,6 @@ class ConfigGui(tk.Tk):
                 "io": {
                     "input_catalog": self.make_project_relative_path(self.input_catalog_var.get()),
                     "out_dir": out_dir,
-                    "KDTREE_FILENAME": "ckdtree.pkl",
                     "usecolumns": [
                         catalog_source_id_column,
                         catalog_ra_column,
@@ -1321,14 +1320,19 @@ class ConfigGui(tk.Tk):
         session_id = f"{os.getpid()}-{int(time.time() * 1000)}"
         title = f"PHOTO-CAT Pipeline {session_id}"
         command = (
-            f'cd "{PROJECT_DIR}"; '
-            f'export PHOTO_CAT_PROJECT_DIR="{PROJECT_DIR}"; '
-            f'export PHOTO_CAT_CONFIG="{CONFIG_PATH}"; '
-            f'export PHOTO_CAT_PIPELINE_TITLE="{title}"; '
-            f'bash "{runner_path}"'
+            f"cd {shlex.quote(str(PROJECT_DIR))}; "
+            f"export PHOTO_CAT_PROJECT_DIR={shlex.quote(str(PROJECT_DIR))}; "
+            f"export PHOTO_CAT_CONFIG={shlex.quote(str(CONFIG_PATH))}; "
+            f"export PHOTO_CAT_PIPELINE_TITLE={shlex.quote(title)}; "
+            f"bash {shlex.quote(str(runner_path))}"
         )
-        escaped_command = command.replace('\\', '\\\\').replace('"', '\\"')
-        escaped_title = title.replace('"', '\\"')
+        escaped_command = (
+            command.replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\r", "\\r")
+            .replace("\n", "\\n")
+        )
+        escaped_title = title.replace("\\", "\\\\").replace('"', '\\"')
         script = (
             'tell application "Terminal"\n'
             f'    set newTab to do script "{escaped_command}"\n'
@@ -1340,7 +1344,7 @@ class ConfigGui(tk.Tk):
         self.pipeline_sessions.append(title)
 
     def open_unix_terminal(self, runner_path: Path, env: dict) -> None:
-        runner_cmd = f'bash "{runner_path}"'
+        runner_cmd = f"bash {shlex.quote(str(runner_path))}"
         terminal_commands = [
             ["x-terminal-emulator", "-e", "bash", "-lc", runner_cmd],
             ["gnome-terminal", "--", "bash", "-lc", runner_cmd],

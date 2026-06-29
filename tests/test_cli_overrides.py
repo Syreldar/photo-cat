@@ -7,7 +7,6 @@ from __future__ import annotations
 import pytest
 
 from pathlib import Path
-from typing import Callable
 
 import yaml
 
@@ -22,7 +21,7 @@ def test_cli_run_accepts_all_override_groups(tmp_path: Path, monkeypatch) -> Non
     parser = cli.build_parser()
     args = parser.parse_args([
         "run", "--config", "config.yaml", "--input-catalog", "catalog.csv", "--out-dir", "output/run",
-        "--kdtree-filename", "tree.pkl", "--usecolumns", "id,RA,DEC,G", "--catalog-source-id-column", "id",
+        "--usecolumns", "id,RA,DEC,G", "--catalog-source-id-column", "id",
         "--ra-column", "RA", "--dec-column", "DEC", "--mag-column", "G", "--no-use-dask",
         "--calculate-separations", "--max-radius-arcsec", "180", "--chunk-size", "500",
         "--buffer-flush-interval", "25", "--index-dir", "output/run", "--no-targets-input",
@@ -34,7 +33,6 @@ def test_cli_run_accepts_all_override_groups(tmp_path: Path, monkeypatch) -> Non
 
     assert overrides["input_catalog"] == str((tmp_path / "catalog.csv").resolve())
     assert overrides["out_dir"] == str((tmp_path / "output" / "run").resolve())
-    assert overrides["kdtree_filename"] == "tree.pkl"
     assert overrides["usecolumns"] == ["id", "RA", "DEC", "G"]
     assert overrides["catalog_source_id_column"] == "id"
     assert overrides["ra_column"] == "RA"

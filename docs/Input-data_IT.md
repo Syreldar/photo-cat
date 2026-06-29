@@ -13,7 +13,9 @@ Le colonne attese di default sono:
 - `dec`
 - `phot_g_mean_mag`
 
-`ra` e `dec` devono essere coordinate numeriche. `phot_g_mean_mag` deve essere numerica se viene usato il filtro di magnitudine.
+I valori `source_id` devono essere univoci anche dopo la normalizzazione numerica
+(`1` e `001` sono ambigui). `ra` deve essere finito e compreso in `[0, 360)`,
+`dec` in `[-90, 90]` e `phot_g_mean_mag` deve essere finito.
 
 ## CSV target
 

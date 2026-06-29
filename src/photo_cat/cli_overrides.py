@@ -22,7 +22,6 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "io": {
             "input_catalog": "data/example_catalog.csv",
             "out_dir": "data/output",
-            "KDTREE_FILENAME": "ckdtree.pkl",
             "usecolumns": [
                 "source_id",
                 "ra",
@@ -67,7 +66,6 @@ DEFAULT_CONFIG: dict[str, Any] = {
 OVERRIDE_PATHS: dict[str, tuple[str, ...]] = {
     "input_catalog": ("build_neighbors_index", "io", "input_catalog"),
     "out_dir": ("build_neighbors_index", "io", "out_dir"),
-    "kdtree_filename": ("build_neighbors_index", "io", "KDTREE_FILENAME"),
     "usecolumns": ("build_neighbors_index", "io", "usecolumns"),
     "catalog_source_id_column": ("build_neighbors_index", "io", "columns", "source_id"),
     "ra_column": ("build_neighbors_index", "io", "columns", "ra"),

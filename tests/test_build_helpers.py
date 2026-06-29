@@ -6,10 +6,12 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pathlib import Path
 
 from photo_cat.build_neighbors_index import (
     calculate_neighbor_separations_arcsec,
     compute_chord_radius,
+    load_star_dataframe,
     neighbor_indices_without_self,
 )
 
@@ -40,3 +42,18 @@ def test_calculate_neighbor_separations_arcsec_uses_unit_vectors() -> None:
 def test_compute_chord_radius_is_positive_for_positive_angular_radius() -> None:
     """The spatial KDTree radius must be positive for a valid angular search radius."""
     assert compute_chord_radius(120.0) > 0.0
+
+
+@pytest.mark.unit
+def test_catalog_rejects_source_ids_that_collide_after_numeric_normalization(tmp_path: Path) -> None:
+    """Textually distinct IDs such as 1 and 001 must not resolve ambiguously to one numeric target."""
+    catalog_path = tmp_path / "ambiguous.csv"
+    catalog_path.write_text(
+        "source_id,ra,dec,phot_g_mean_mag\n"
+        "1,10.0,20.0,11.0\n"
+        "001,11.0,21.0,12.0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="unique after numeric normalization"):
+        load_star_dataframe(str(catalog_path), use_dask=False)

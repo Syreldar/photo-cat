@@ -18,7 +18,6 @@ from .path_policy import (
     resolve_config_file_path,
     resolve_user_path,
     validate_directory_target,
-    validate_filename_only,
 )
 
 
@@ -35,7 +34,6 @@ class BuildConfig:
 
     input_catalog: str
     out_dir: str
-    KDTREE_FILENAME: str
     use_dask: bool
     calculate_separations: bool
     max_radius_arcsec: float
@@ -187,6 +185,7 @@ def parse_float(
     *,
     minimum: float | None = None,
     exclusive_minimum: bool = False,
+    maximum: float | None = None,
 ) -> float:
     """Parse a finite numeric setting and optionally enforce a lower bound."""
     if (value is None):
@@ -205,6 +204,9 @@ def parse_float(
         if (below_minimum):
             comparison = f"greater than {minimum}" if (exclusive_minimum) else f"at least {minimum}"
             raise ValueError(f"{label} must be {comparison}.")
+
+    if (maximum is not None and result > maximum):
+        raise ValueError(f"{label} must be at most {maximum}.")
 
     return result
 
@@ -258,11 +260,6 @@ def validate_output_directory(path_value: str, label: str) -> str:
     return str(validate_directory_target(Path(path_value), label))
 
 
-def validate_output_filename(value: str, label: str) -> str:
-    """Require an output filename rather than a path outside the configured output folder."""
-    return validate_filename_only(value, label)
-
-
 def column_name(columns: dict[str, Any], legacy_usecolumns: list[Any], key: str, index: int, default: str) -> str:
     """Resolve one catalogue column name from the modern mapping, legacy list, or default."""
     if (columns.get(key) is not None):
@@ -307,10 +304,6 @@ def load_build_config(section_config: dict[str, Any], config_dir: Path) -> Build
             config_dir,
         ),
         out_dir=resolve_required_path(io.get("out_dir"), "build_neighbors_index.io.out_dir", config_dir),
-        KDTREE_FILENAME=validate_output_filename(
-            require_text(io.get("KDTREE_FILENAME"), "build_neighbors_index.io.KDTREE_FILENAME", "ckdtree.pkl"),
-            "build_neighbors_index.io.KDTREE_FILENAME",
-        ),
         use_dask=parse_bool(settings.get("use_dask"), "build_neighbors_index.settings.use_dask", True),
         calculate_separations=parse_bool(
             settings.get("calculate_separations"),
@@ -323,6 +316,7 @@ def load_build_config(section_config: dict[str, Any], config_dir: Path) -> Build
             120.0,
             minimum=0.0,
             exclusive_minimum=True,
+            maximum=648000.0,
         ),
         chunk_size=parse_positive_int(settings.get("chunk_size"), "build_neighbors_index.settings.chunk_size", 10000),
         buffer_flush_interval=parse_positive_int(
@@ -373,6 +367,7 @@ def load_query_config(section_config: dict[str, Any], config_dir: Path) -> Query
             47.0,
             minimum=0.0,
             exclusive_minimum=True,
+            maximum=648000.0,
         ),
         delta_mag=parse_float(
             settings.get("delta_mag"),

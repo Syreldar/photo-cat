@@ -21,7 +21,6 @@ build_neighbors_index:
   io:
     input_catalog: {sample_inputs.catalog_path.as_posix()}
     out_dir: {(tmp_path / 'output').as_posix()}
-    KDTREE_FILENAME: ckdtree.pkl
     columns:
       source_id: source_id
       ra: ra

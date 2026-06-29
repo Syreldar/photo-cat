@@ -25,3 +25,10 @@ Normal users should run only the root starter files:
 - `run_linux_macos.sh`
 
 These are provided for advanced/manual workflows. Most users do not need them.
+
+## Runtime-helper updates
+
+The platform launchers pin the downloaded `uv` helper and verify the official
+SHA-256 digest before extraction. When updating `UV_VERSION`/`UvVersion`, update
+every platform digest from the same immutable upstream release and keep the
+launcher-security tests in sync.

@@ -31,7 +31,7 @@ Index files (produced by build_neighbors_index.py)
     - special_ids.npz
         Contains:
             * internal_ids : int64[:] -> internal_ids for non-numeric IDs
-            * names    : object[:] -> original string IDs (e.g. "HD 216608A")
+            * names    : unicode[:] -> original string IDs (e.g. "HD 216608A")
 
     - master_catalog.parquet
         Full catalog for inspection (not used in this low-memory query path).
@@ -89,7 +89,7 @@ Implementation notes
 Output
 ------
     - Un unico file JSON, salvato in:
-          INDEX_DIR / "output" / "<basename>_FoV..._dmag..._YYYYMMDD_HHMM.json"
+          INDEX_DIR / "output" / "<basename>_FoV..._dmag..._YYYYMMDD_HHMMSS_microseconds.json"
 """
 
 import csv
@@ -102,6 +102,7 @@ from typing import Optional, Dict
 import numpy as np
 import pandas as pd
 
+from .index_manifest import IndexManifest, load_index_manifest, validate_index_structure
 from .target_result import TargetResult
 from .contaminant import Contaminant
 from .logger_setup import get_logger
@@ -171,6 +172,7 @@ class QueryRuntimePlan:
 
     config: QueryConfig
     paths: IndexPaths
+    manifest: IndexManifest
     output_json: Path
 
 
@@ -182,13 +184,21 @@ def validate_index_directory(index_dir: str) -> IndexPaths:
 def prepare_query_runtime(config: QueryConfig) -> QueryRuntimePlan:
     """Validate query filesystem inputs before opening arrays or memory maps."""
     paths = validate_index_directory(config.INDEX_DIR)
+    manifest = load_index_manifest(paths.manifest)
+    validate_index_structure(paths, manifest)
+    if (config.field_of_view_arcsec > manifest.max_radius_arcsec):
+        raise ValueError(
+            f"Query field_of_view_arcsec ({config.field_of_view_arcsec}) exceeds the index build "
+            f"radius ({manifest.max_radius_arcsec}). Rebuild with a larger max_radius_arcsec "
+            "or reduce the query field of view."
+        )
     output_json = query_output_json_path(
         paths,
         config.TARGETS_INPUT,
         config.field_of_view_arcsec,
         config.delta_mag,
     )
-    return QueryRuntimePlan(config, paths, output_json)
+    return QueryRuntimePlan(config, paths, manifest, output_json)
 
 
 def ensure_result_output_directory(index_dir: str) -> Path:
@@ -338,9 +348,14 @@ def load_catalog_arrays(
 
     # Special IDs: few rows with non-numeric names (e.g. "HD 216608A").
     special_ids_path = paths.special_ids
-    special = np.load(special_ids_path, allow_pickle=True)
-    special_internal_ids = special["internal_ids"].astype(np.int64)
-    special_names = special["names"].astype(str)
+    try:
+        with np.load(special_ids_path, allow_pickle=False) as special:
+            special_internal_ids = special["internal_ids"].astype(np.int64)
+            special_names = special["names"].astype(str)
+    except ValueError as error:
+        raise ValueError(
+            "special_ids.npz uses the legacy unsafe object format. Rebuild the index."
+        ) from error
 
     # Mapping internal_id -> special string ID.
     internal_to_special_name: Dict[int, str] = {
@@ -354,13 +369,16 @@ def load_catalog_arrays(
     # ------------------------------------------------------------------
     # Build mapping "numeric real_id -> internal_id" using only integers.
     # ------------------------------------------------------------------
-    valid_mask = real_ids_int >= 0
-    numeric_indices = np.nonzero(valid_mask)[0].astype(np.int64)
-    numeric_real_ids = real_ids_int[valid_mask].astype(np.int64)
-
-    sort_idx = np.argsort(numeric_real_ids)
-    numeric_real_ids_sorted = numeric_real_ids[sort_idx]
-    numeric_internal_ids_sorted = numeric_indices[sort_idx] + 1  # internal_id = idx + 1
+    numeric_real_ids_sorted = np.load(
+        paths.numeric_real_ids_sorted,
+        mmap_mode="r",
+        allow_pickle=False,
+    )
+    numeric_internal_ids_sorted = np.load(
+        paths.numeric_internal_ids_sorted,
+        mmap_mode="r",
+        allow_pickle=False,
+    )
 
     logger.info(f"Prepared numeric mapping for {numeric_real_ids_sorted.size:,} real IDs.")
 
@@ -492,23 +510,19 @@ def valid_neighbor_indices(neighbor_internal_ids: np.ndarray, number_of_sources:
 def calculate_flux_fraction_extra(
     target_magnitude: float,
     contaminant_magnitudes: np.ndarray,
-    inside_field_of_view: np.ndarray,
+    selected_contaminants: np.ndarray,
 ) -> float:
     """Return extra contaminant flux as a percentage of the target flux."""
-    if (not np.isfinite(target_magnitude) or not np.any(inside_field_of_view)):
+    if (not np.isfinite(target_magnitude) or not np.any(selected_contaminants)):
         return 0.0
 
-    target_flux = 10.0 ** (-0.4 * target_magnitude)
-    if (not np.isfinite(target_flux) or target_flux <= 0.0):
-        return 0.0
-
-    magnitudes_in_fov = contaminant_magnitudes[inside_field_of_view]
-    valid_magnitudes = magnitudes_in_fov[np.isfinite(magnitudes_in_fov)]
+    selected_magnitudes = contaminant_magnitudes[selected_contaminants]
+    valid_magnitudes = selected_magnitudes[np.isfinite(selected_magnitudes)]
     if (valid_magnitudes.size == 0):
         return 0.0
 
-    contaminant_fluxes = 10.0 ** (-0.4 * valid_magnitudes)
-    return float((contaminant_fluxes.sum() / target_flux) * 100.0)
+    flux_ratios = 10.0 ** (-0.4 * (valid_magnitudes - target_magnitude))
+    return float(flux_ratios[np.isfinite(flux_ratios)].sum() * 100.0)
 
 
 def build_contaminant_records(
@@ -555,6 +569,7 @@ def process_target(
     internal_to_special_name: dict[int, str],
     field_of_view_arcsec: float,
     delta_mag: float,
+    neighbor_separations_mm: Optional[np.ndarray] = None,
 ) -> dict | None:
     """Evaluate one target while keeping numerical work separate from loop orchestration."""
     number_of_sources = ra.shape[0]
@@ -573,7 +588,10 @@ def process_target(
     if (start == end):
         return empty_target_result(source_id, target_ra, target_dec, target_magnitude)
 
-    contaminant_indices = valid_neighbor_indices(neighbors_mm[start:end], number_of_sources)
+    neighbor_internal_ids = np.asarray(neighbors_mm[start:end], dtype=np.int64)
+    candidate_indices = neighbor_internal_ids - 1
+    valid_mask = (candidate_indices >= 0) & (candidate_indices < number_of_sources)
+    contaminant_indices = candidate_indices[valid_mask]
     if (contaminant_indices.size == 0):
         return empty_target_result(source_id, target_ra, target_dec, target_magnitude)
 
@@ -584,20 +602,26 @@ def process_target(
     else:
         contaminant_magnitudes = np.asarray(gmag[contaminant_indices], dtype=np.float64)
 
-    contaminant_separations = separation_arcsec(
-        target_ra,
-        target_dec,
-        contaminant_ra,
-        contaminant_dec,
-    )
+    if (neighbor_separations_mm is None):
+        contaminant_separations = separation_arcsec(
+            target_ra,
+            target_dec,
+            contaminant_ra,
+            contaminant_dec,
+        )
+    else:
+        contaminant_separations = np.asarray(
+            neighbor_separations_mm[start:end],
+            dtype=np.float64,
+        )[valid_mask]
     inside_field_of_view = contaminant_separations <= field_of_view_arcsec
+    selected_mask = inside_field_of_view & ((contaminant_magnitudes - target_magnitude) <= delta_mag)
     flux_fraction_extra = calculate_flux_fraction_extra(
         target_magnitude,
         contaminant_magnitudes,
-        inside_field_of_view,
+        selected_mask,
     )
 
-    selected_mask = inside_field_of_view & ((contaminant_magnitudes - target_magnitude) <= delta_mag)
     contaminants = build_contaminant_records(
         contaminant_indices,
         contaminant_magnitudes,
@@ -622,7 +646,7 @@ def process_target(
 
 def loop_over_targets(
     offsets: np.ndarray,
-    neighbors_mm: np.memmap,
+    neighbors_mm: np.ndarray,
     ra: np.ndarray,
     dec: np.ndarray,
     gmag: Optional[np.ndarray],
@@ -631,6 +655,7 @@ def loop_over_targets(
     field_of_view_arcsec: float,
     delta_mag: float,
     targets_internal: list[int],
+    neighbor_separations_mm: Optional[np.ndarray] = None,
 ) -> list[dict]:
     """Evaluate configured targets while leaving one-target logic independently testable."""
     total_targets = len(targets_internal)
@@ -651,6 +676,7 @@ def loop_over_targets(
             internal_to_special_name,
             field_of_view_arcsec,
             delta_mag,
+            neighbor_separations_mm,
         )
         if (result is not None):
             results.append(result)
@@ -681,7 +707,7 @@ def save_results_to_json(results: list, json_path: str) -> str:
     json_path : str
         Path to the written JSON file.
     """
-    with open(json_path, "w", encoding="utf-8") as f:
+    with open(json_path, "x", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     return json_path
 
@@ -704,20 +730,35 @@ def main(config_path: str | Path | None = None) -> int:
     logger.info("Loading index data...")
 
     with ActivityBar("[loading index arrays]"):
-        offsets = np.load(paths.offsets)
+        offsets = np.load(paths.offsets, allow_pickle=False)
     neighbors_path = paths.neighbors_ids
 
     total_neighbors = int(offsets[-1])
     logger.info(f"Total neighbor entries: {total_neighbors:,}")
 
     with ActivityBar("[opening neighbour memory map]"):
-        neighbors_mm = np.memmap(
-            neighbors_path,
-            dtype=np.int64,
-            mode='r',
-            shape=(total_neighbors,)
-        )
+        if (total_neighbors == 0):
+            neighbors_mm = np.empty(0, dtype=np.int64)
+        else:
+            neighbors_mm = np.memmap(
+                neighbors_path,
+                dtype=np.int64,
+                mode='r',
+                shape=(total_neighbors,)
+            )
     logger.info("Index data loaded.")
+
+    neighbor_separations_mm: np.ndarray | None = None
+    if (runtime_plan.manifest.calculate_separations):
+        if (total_neighbors == 0):
+            neighbor_separations_mm = np.empty(0, dtype=np.float64)
+        else:
+            neighbor_separations_mm = np.memmap(
+                paths.neighbors_seps,
+                dtype=np.float64,
+                mode="r",
+                shape=(total_neighbors,),
+            )
 
     # ---------------- LOAD CATALOG ARRAYS ----------
     ra, dec, gmag, real_ids_int, internal_to_special_name, targets_internal = load_catalog_arrays(
@@ -739,7 +780,8 @@ def main(config_path: str | Path | None = None) -> int:
         internal_to_special_name=internal_to_special_name,
         field_of_view_arcsec=config_query.field_of_view_arcsec,
         delta_mag=config_query.delta_mag,
-        targets_internal=targets_internal
+        targets_internal=targets_internal,
+        neighbor_separations_mm=neighbor_separations_mm,
     )
 
     # ---------------- SAVE RESULTS -----------------

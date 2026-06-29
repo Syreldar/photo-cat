@@ -25,3 +25,10 @@ Gli utenti normali dovrebbero avviare solo i file starter nella cartella root:
 - `run_linux_macos.sh`
 
 Sono forniti per workflow avanzati/manuali. La maggior parte degli utenti non ne ha bisogno.
+
+## Aggiornamento dell'helper runtime
+
+I launcher fissano la versione dell'helper `uv` e verificano il digest SHA-256
+ufficiale prima dell'estrazione. Quando si aggiorna `UV_VERSION`/`UvVersion`,
+aggiornare tutti i digest di piattaforma dalla stessa release upstream immutabile
+e mantenere allineati i test di sicurezza dei launcher.

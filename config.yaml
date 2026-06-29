@@ -9,7 +9,6 @@ build_neighbors_index:
   io:
     input_catalog: data/example_catalog.csv
     out_dir: data/output
-    KDTREE_FILENAME: ckdtree.pkl
     usecolumns:
     - source_id
     - ra
